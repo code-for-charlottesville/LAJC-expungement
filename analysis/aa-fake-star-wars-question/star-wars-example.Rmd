@@ -1,0 +1,66 @@
+---
+title: "Star Wars data"
+author: "Seth Green"
+date: "2/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+This is just some fake data to show where to put things. Just showing some of the demo stuff from [dplyr](https://dplyr.tidyverse.org/#usage) so that we have something to render.
+
+**The idea is to put each analysis question in it's own repo.** This is an analysis of the question: "Who are the characters from Tatooine, Alderaan, and Kashyyyk?"
+
+```{r, message = F}
+# first you need to install these packages
+library(tidyverse)
+```
+
+## Analysis
+
+Not sure how much narrative "report" we want in these docs, and also how much code to include, but both `.Rmd` and `.ipynb` can support whatever format we want, and then render to either an HTML or pdf.
+
+Then, once the analysis is finished and merged to `main`, we can drop that rendered HTML or pdf in `code-for-charlottesville.github.io/LAJC-expungement` and send that link to whoever needs to see it.
+
+```{r cars}
+df <- starwars
+head(df)
+```
+
+```{r}
+
+df %>% 
+  filter(homeworld %in% c("Tatooine", "Alderaan", "Kashyyyk")) %>%
+  mutate(name, bmi = mass / ((height / 100)  ^ 2)) %>%
+  select(name:mass, bmi, species) %>%
+  ggplot(aes(x = height, y = log(bmi))) +
+    geom_point(aes(colour = species, size = log(mass))) +
+    geom_text(aes(label = name), hjust = 1, vjust = 0)
+```
+
+
+```{r}
+
+starwars %>%
+  group_by(species) %>%
+  summarise(
+    n = n(),
+    mass = mean(mass, na.rm = TRUE)
+  ) %>%
+  filter(
+    n > 1,
+    mass > 50
+  ) %>%
+  rename(
+    `Number of Characters` = n,
+    `Average Mass` = mass
+    ) %>%
+  knitr::kable()
+
+```
+
+
