@@ -25,9 +25,9 @@ library(fs)
 First pull in the sample data
 
 ```{r, eval = FALSE}
-DATA_DIR <- "~/court-data"
+DATA_DIR <- "/srv/court-data"
 
-sample_data <- read_csv(file.path(DATA_DIR, "sample-data", "SAMPLE-criminal-circuit-2019.csv"))
+sample_data <- read_csv(file.path(DATA_DIR, "district_criminal_2019_anon_07.csv"))
 head(sample_data)
 ```
 
@@ -35,11 +35,11 @@ Or pull in some subset of the real data. _Probably want something in here to che
 
 ```{r, eval = FALSE}
 years <- "201[89]"
-courts <- "criminal-circuit"
+courts <- "circuit_criminal"
 
 df <- fs::dir_ls(DATA_DIR) %>% # get all files in dir
-  str_contains(years) %>%      # filter to only the years you want
-  str_contains(courts) %>%     # filter to only the type of courts you want
+  str_subset(years) %>%      # filter to only the years you want
+  str_subset(courts) %>%     # filter to only the type of courts you want
   map_dfr(fread)               # read in the files to a single tibble 
 
 dim(df)
