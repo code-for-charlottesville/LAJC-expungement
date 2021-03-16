@@ -1,0 +1,204 @@
+---
+title: "Current State of Expungeable Records SCRAPS"
+author: "Seth Green"
+date: "3/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=F}
+# first you need to install these packages
+library(httr)
+library(tidyverse)
+library(data.table)
+library(fs)
+```
+
+
+# Connecting to the data
+
+Here we'll have a function to pull in the data, ideally for a single year. This one works to get a 1000 row sample, but we'll rewrite this once we're on the server to just hit the csv's directly.
+
+```{r}
+pull_table_sample <- function(.table) {
+  endpoint <- "http://132.145.211.20:8001/criminal-court.csv?"
+  my_query <- paste("select * from", .table)
+  request <- GET(url = endpoint,
+              query = list(
+                sql = my_query
+              ))
+  read_csv(content(request, as = "text", encoding = "UTF-8"))
+}
+```
+And now pull a sample for demo:
+```{r}
+data <- pull_table_sample("circuit_criminal_2019_anon_00")
+head(data)
+```
+
+## Exploratory
+
+A few questions about the data here. For example, do we want to use `HearingResult` instead of `DispositionCode`? I'm not sure, but I think `DispositionCode`.
+
+```{r}
+str_subset(names(data), "Disposition")
+```
+
+```{r}
+str_subset(names(data), "Result")
+```
+
+
+```{r}
+full_join(
+  count(data, DispositionCode) %>% rename(result = DispositionCode, DispositionCode = n),
+  count(data, HearingResult) %>% rename(result = HearingResult, HearingResult = n),
+  by = "result"
+) %>%
+  arrange(desc(DispositionCode), desc(HearingResult)) %>%
+  knitr::kable()
+```
+
+
+# Filter to expungeable cases
+
+This is the real analysis section, we're we filter down to the cases that we care about.
+
+### Defining the cases we care about
+This is the most complicated section. Basically, I am defining a list of the "categories" of cases that we care about, as defined by the new law. Each "category" is stored as a query, which is a list with the following elements:
+
+* `reference` -- the section of the new law describing a specific category of case that is expungeable.
+* `title` -- a free text sample from that section of the new law, for explanatory purposes.
+* Any applicable filters. These elements each contain values that the specified field is allowed to take:
+  * `CodeSection` -- The codes for the alleged crime
+  * `DispositionCode` -- The relevant dispositions of the cases for the relevant crimes
+  * `ChargeType` -- The relevant charge type ("Felony", "Misdemeanor", etc.) if relevant
+  
+**NOTE: this is a partial list.** We will need to go throught the new law again with a fine-toothed comb, and ideally with an LAJC lawyer.
+
+```{r pressure, echo=FALSE}
+queries <- list(
+  list(
+    reference = "19.2-392.6.A",
+    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
+    CodeSection = c("4.1-305", "18.2-250.1"),
+    DispositionCode = c("Deferred", "Dismissed", "Nolle Prosequi") # "Nolle Prosequi" may be not right, I did this mostly for testing because there are no "Deferred" cases
+  ),
+  list(
+    reference = "19.2-392.6.B",
+    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
+    CodeSection = c("4.1-305", "18.2-96", "18.2-103", "18.2-119", "18.2-120", "18.2-134"),
+    DispositionCode = c("Guilty")
+  ),
+  list(
+    reference = "19.2-392.6.B-misdemeanor",
+    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
+    CodeSection = c("18.2-248.1", "18.2-250.1", "18.2-415"),
+    DispositionCode = c("Guilty"),
+    ChargeType = c("Misdemeanor")
+  ),
+  list(
+    reference = "19.2-392.12",
+    title = "Sealing of offenses resulting in a deferred and dismissed disposition or conviction by petition.",  
+    CodeSection = c("18.2-36.1", "18.2-36.2", "18.2-51.4", "18.2-51.5", "18.2-57.2", "18.2-266", "46.2-341.24"),
+    DispositionCode = c("Deferred", "Dismissed")
+  )
+)
+
+```
+
+
+### Code to filter to those cases
+
+This function takes a single query (i.e. one element from the list we just defined) and filters the input data based on it. We will map over this function below.
+
+```{r}
+#' Filter the input data based on a query
+#' @param .d A tibble of the criminal court data
+#' @param .q A "query list" as defined in the section above.
+filter_on_query <- function(.d, .q) {
+  .d %>%
+    filter(
+      CodeSection %in% (.q$CodeSection %||% CodeSection),
+      DispositionCode %in% (.q$DispositionCode %||% DispositionCode),
+      ChargeType %in% (.q$ChargeType %||% ChargeType)
+    ) %>%
+    mutate(
+      reference = .q$reference,
+      title = .q$title
+    ) %>%
+    select(
+      reference,
+      title,
+      HearingDate,
+      DispositionDate,
+      person_id,
+      CodeSection,
+      DispositionCode,
+      ChargeType,
+      Charge
+    )
+}
+```
+
+Here we map over the queries to get only the relevant cases that fit _any_ of our queries.
+
+```{r}
+ex_data <- purrr::map_dfr(queries, function(.query) {
+  filter_on_query(data, .query)
+})
+
+nrow(ex_data)
+```
+
+Check out a sample of what we got back
+
+```{r}
+ex_data %>%
+  select(
+    reference,
+    DispositionDate,
+    CodeSection,
+    DispositionCode,
+    ChargeType,
+    Charge
+  ) %>%
+  knitr::kable()
+```
+## Roll up by year
+
+This is where we roll it up to what they are likely looking for: by year, how many cases are eligible for expungement and why? For the "and why?" part, we give them the reference section in the new law.
+
+```{r}
+years <- 2015:2019
+
+all_df <- purrr::map_dfr(years, function(.y) {
+  year_df <- pull_table_sample(glue::glue("circuit_criminal_{.y}_anon_00"))
+  purrr::map_dfr(queries, function(.query) {
+    filter_on_query(year_df, .query)
+  }) %>%
+    mutate(
+      year = .y
+    )
+})
+nrow(all_df)
+```
+
+```{r}
+all_df %>%
+  count(year) %>%
+  knitr::kable()
+```
+
+```{r}
+all_df %>%
+  count(year, reference) %>%
+  ggplot(aes(x = year, y = n, fill = reference)) +
+    geom_bar(stat = "identity") +
+    ylab("Count of cases") +
+    ggtitle("Count of Expungeable Cases\n  by year and section of new law")
+```
+
