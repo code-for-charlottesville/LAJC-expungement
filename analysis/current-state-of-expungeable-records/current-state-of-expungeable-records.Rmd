@@ -1,12 +1,10 @@
 ---
-title: "Current State of Expungeable Records SCRAPS"
-author: "Seth Green"
-date: "3/15/2021"
+title: "Current State of Expungeable Records"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 ```
 
 ```{r, message=F}
@@ -18,39 +16,15 @@ library(fs)
 ```
 
 
-# Connecting to the data
+# The data
 
-Here we'll have a function to pull in the data, ideally for a single year. This one works to get a 1000 row sample, but we'll rewrite this once we're on the server to just hit the csv's directly.
+We should put some brief intro about the data we're using, though I think they already know about it...
 
-```{r}
-pull_table_sample <- function(.table) {
-  endpoint <- "http://132.145.211.20:8001/criminal-court.csv?"
-  my_query <- paste("select * from", .table)
-  request <- GET(url = endpoint,
-              query = list(
-                sql = my_query
-              ))
-  read_csv(content(request, as = "text", encoding = "UTF-8"))
-}
-
-```
-And now pull a sample for demo:
-```{r}
-sample_data <- pull_table_sample("circuit_criminal_2019_anon_00")
-print(nrow(sample_data))
-head(sample_data)
-```
-
-### The full data
-
-The full data is pretty big. Here we filter to the files we care about and then we'll read them one-by-one below.
 
 ```{r}
 criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
-length(criminal_files)
 ```
 
-Here are two helper functions to pull in only the columns we need. We also rename some of them in the district court files, in order to be consistent with the naming in the circuit court files.
 ```{r}
 read_district_file <- function(.f) {
   fread(
@@ -95,8 +69,6 @@ read_circuit_file <- function(.f) {
 
 # Filter to expungeable cases
 
-This is the real analysis section, we're we filter down to the cases that we care about.
-
 ### Defining the cases we care about
 This is the most complicated section. Basically, I am defining a list of the "categories" of cases that we care about, as defined by the new law. Each "category" is stored as a query, which is a list with the following elements:
 
@@ -109,7 +81,7 @@ This is the most complicated section. Basically, I am defining a list of the "ca
   
 **Note: this may be a partial list.** We should probably go through the new law again with an LAJC lawyer to make sure we have coded this correctly.
 
-```{r pressure, echo=FALSE}
+```{r pressure, echo=TRUE}
 QUERIES <- list(
   list(
     reference = "19.2-392.6.A",
@@ -139,10 +111,9 @@ QUERIES <- list(
 )
 ```
 
-
 Under the old law, any cases with the following dispositions should be eligible for expungement.
 
-```{r}
+```{r, echo = TRUE}
 OLD_LAW <- c(
       "Dismissed", 
       "Dismissed/Other", 
@@ -156,10 +127,6 @@ OLD_LAW <- c(
 
 ```
 
-
-### Code to filter to those cases
-
-This function takes a single query (i.e. one element from the list we just defined) and filters the input data based on it. We will map over this function below.
 
 ```{r}
 #' Filter the input data based on a query
@@ -193,7 +160,10 @@ Here we map over the queries to get only the relevant cases that fit _any_ of ou
 
 ```{r}
 purrr::map_dfr(QUERIES, function(.query) {
-  filter_on_query(sample_data, .query)
+  filter_on_query(
+    read_district_file(str_subset(criminal_files, "district")[1]), 
+    .query
+  )
 }) %>%
   select(
     reference,
@@ -201,13 +171,15 @@ purrr::map_dfr(QUERIES, function(.query) {
     DispositionCode,
     ChargeType,
     Charge
-  ) %>% knitr::kable()
+  ) %>% 
+  slice_head(n = 10) %>%
+  knitr::kable()
 ```
+
 
 ### Conviction-free period
 
 **Very important note: we have not considered the 7-year conviction-free stipulation yet.** This is obviously very important, but was more difficult to query so we are planning to come back to it later. Just be sure to keep that in mind when considering the figures below.
-
 
 ## The full data, summarized by year
 
@@ -259,7 +231,6 @@ all_df <- purrr::map_dfr(years_files, function(.y) {
   
   return(new_law_df)
 })
-nrow(all_df)
 ```
 
 ## Results for the New Law
@@ -267,7 +238,10 @@ nrow(all_df)
 Total counts of _newly expungeable_ cases by year:
 ```{r}
 all_df %>%
-  count(year) %>%knitr::kable()
+  count(year) %>%
+  mutate(n = format(n, big.mark = ",", scientific = FALSE)) %>%
+  rename(Count = n) %>%
+  knitr::kable()
 ```
 
 ```{r}

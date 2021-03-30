@@ -1,0 +1,425 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Current State of Expungeable Records},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Current State of Expungeable Records}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\hypertarget{the-data}{%
+\section{The data}\label{the-data}}
+
+We should put some brief intro about the data we're using, though I
+think they already know about it\ldots{}
+
+\hypertarget{filter-to-expungeable-cases}{%
+\section{Filter to expungeable
+cases}\label{filter-to-expungeable-cases}}
+
+\hypertarget{defining-the-cases-we-care-about}{%
+\subsubsection{Defining the cases we care
+about}\label{defining-the-cases-we-care-about}}
+
+This is the most complicated section. Basically, I am defining a list of
+the ``categories'' of cases that we care about, as defined by the new
+law. Each ``category'' is stored as a query, which is a list with the
+following elements:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{reference} -- the section of the new law describing a specific
+  category of case that is expungeable.
+\item
+  \texttt{title} -- a free text sample from that section of the new law,
+  for explanatory purposes.
+\item
+  Any applicable filters. These elements each contain values that the
+  specified field is allowed to take:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \texttt{CodeSection} -- The codes for the alleged crime
+  \item
+    \texttt{DispositionCode} -- The relevant dispositions of the cases
+    for the relevant crimes
+  \item
+    \texttt{ChargeType} -- The relevant charge type (``Felony'',
+    ``Misdemeanor'', etc.) if relevant
+  \end{itemize}
+\end{itemize}
+
+\textbf{NOTE: this may be a partial list.} We should probably go through
+the new law again with an LAJC lawyer to make sure we have coded this
+correctly.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{QUERIES }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{reference =} \StringTok{"19.2{-}392.6.A"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction."}\NormalTok{,}
+    \AttributeTok{CodeSection =} \FunctionTok{c}\NormalTok{(}\StringTok{"4.1{-}305"}\NormalTok{, }\StringTok{"18.2{-}250.1"}\NormalTok{),}
+    \AttributeTok{DispositionCode =} \FunctionTok{c}\NormalTok{(}\StringTok{"Dismissed"}\NormalTok{) }
+\NormalTok{  ),}
+  \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{reference =} \StringTok{"19.2{-}392.6.B"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction."}\NormalTok{,}
+    \AttributeTok{CodeSection =} \FunctionTok{c}\NormalTok{(}\StringTok{"4.1{-}305"}\NormalTok{, }\StringTok{"18.2{-}96"}\NormalTok{, }\StringTok{"18.2{-}103"}\NormalTok{, }\StringTok{"18.2{-}119"}\NormalTok{, }\StringTok{"18.2{-}120"}\NormalTok{, }\StringTok{"18.2{-}134"}\NormalTok{),}
+    \AttributeTok{DispositionCode =} \FunctionTok{c}\NormalTok{(}\StringTok{"Guilty"}\NormalTok{)}
+\NormalTok{  ),}
+  \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{reference =} \StringTok{"19.2{-}392.6.B{-}misdemeanor"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction."}\NormalTok{,}
+    \AttributeTok{CodeSection =} \FunctionTok{c}\NormalTok{(}\StringTok{"18.2{-}248.1"}\NormalTok{, }\StringTok{"18.2{-}250.1"}\NormalTok{, }\StringTok{"18.2{-}415"}\NormalTok{),}
+    \AttributeTok{DispositionCode =} \FunctionTok{c}\NormalTok{(}\StringTok{"Guilty"}\NormalTok{),}
+    \AttributeTok{ChargeType =} \FunctionTok{c}\NormalTok{(}\StringTok{"Misdemeanor"}\NormalTok{)}
+\NormalTok{  ),}
+  \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{reference =} \StringTok{"19.2{-}392.12"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Sealing of offenses resulting in a deferred and dismissed disposition or conviction by petition."}\NormalTok{,  }
+    \AttributeTok{CodeSection =} \FunctionTok{c}\NormalTok{(}\StringTok{"18.2{-}36.1"}\NormalTok{, }\StringTok{"18.2{-}36.2"}\NormalTok{, }\StringTok{"18.2{-}51.4"}\NormalTok{, }\StringTok{"18.2{-}51.5"}\NormalTok{, }\StringTok{"18.2{-}57.2"}\NormalTok{, }\StringTok{"18.2{-}266"}\NormalTok{, }\StringTok{"46.2{-}341.24"}\NormalTok{),}
+    \AttributeTok{DispositionCode =} \FunctionTok{c}\NormalTok{(}\StringTok{"Deferred"}\NormalTok{, }\StringTok{"Dismissed"}\NormalTok{)}
+\NormalTok{  )}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Under the old law, any cases with the following dispositions should be
+eligible for expungement.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{OLD\_LAW }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+      \StringTok{"Dismissed"}\NormalTok{, }
+      \StringTok{"Dismissed/Other"}\NormalTok{, }
+      \StringTok{"Nolle Prosequi"}\NormalTok{, }
+      \StringTok{"Not Guilty/Acquitted"}\NormalTok{, }
+      \StringTok{"Not Guilty By Reason Of Insanity"}\NormalTok{, }
+      \StringTok{"Not True Bill"}\NormalTok{, }
+      \StringTok{"Not Guilty"}\NormalTok{, }
+      \StringTok{"Not Guilty/Insanity"}
+\NormalTok{    )}
+\end{Highlighting}
+\end{Shaded}
+
+Here we map over the queries to get only the relevant cases that fit
+\emph{any} of our queries. This is only the sample data. We pull in all
+of the data below.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.26}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.13}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.17}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.13}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.32}}@{}}
+\toprule
+reference & CodeSection & DispositionCode & ChargeType & Charge \\
+\midrule
+\endhead
+19.2-392.6.A & 4.1-305 & Dismissed & Misdemeanor & UNDERAGE POSS ALCO
+21946 \\
+19.2-392.6.A & 4.1-305 & Dismissed & Misdemeanor & UNDERAGE POSS OF
+ALCOHOL \\
+19.2-392.6.A & 18.2-250.1 & Dismissed & Misdemeanor & POSS OF MARIJ \\
+19.2-392.6.A & 4.1-305 & Dismissed & Misdemeanor & POSS ALCOHOL BY MINOR
+20949 \\
+19.2-392.6.A & 4.1-305 & Dismissed & Misdemeanor & UNDERAGE POSS ALCO
+ACC 20836 \\
+19.2-392.6.B-misdemeanor & 18.2-415 & Guilty & Misdemeanor &
+DISORDERLY \\
+19.2-392.6.B-misdemeanor & 18.2-250.1 & Guilty & Misdemeanor & POSS
+MARIJUANA 21682 \\
+19.2-392.6.B-misdemeanor & 18.2-250.1 & Guilty & Misdemeanor & POSS
+MARIJUANA 21519 \\
+19.2-392.6.B-misdemeanor & 18.2-248.1 & Guilty & Misdemeanor & POSS
+MARIJUANA W/INTENT 20252 \\
+19.2-392.6.B-misdemeanor & 18.2-250.1 & Guilty & Misdemeanor & POSS
+MARIJUANA 20067-01 \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: ON FAMILY
+MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTERY \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTERY \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: ON FAMILY
+MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: ON FAMILY
+MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT/BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT/BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT AND
+BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & JEFFRIES, HOWARD \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & PUFFENBARGER,
+MICHAEL JAMES \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \& BATTER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: ON FAMILY
+MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: ON FAMILY
+MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & A/B PETER
+DICKINSON \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: ON FAMILY
+MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \&
+BATTERY-FAM MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & ASSAULT: ON FAMILY
+MEMBER \\
+19.2-392.12 & 18.2-57.2 & Dismissed & Misdemeanor & A\&B PATRICIA
+GUILDS \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{the-full-data-summarized-by-year}{%
+\subsection{The full data, summarized by
+year}\label{the-full-data-summarized-by-year}}
+
+This is where we roll it up to what they are likely looking for: by
+year, how many cases are eligible for expungement and why? For the ``and
+why?'' part, we give them the reference section in the new law.
+
+\hypertarget{results-for-the-new-law}{%
+\subsection{Results for the New Law}\label{results-for-the-new-law}}
+
+Total counts of \emph{newly expungeable} cases by year:
+
+\begin{longtable}[]{@{}lr@{}}
+\toprule
+year & n \\
+\midrule
+\endhead
+2009 & 51348 \\
+2010 & 50834 \\
+2011 & 49932 \\
+2012 & 50755 \\
+2013 & 51464 \\
+2014 & 49177 \\
+2015 & 45464 \\
+2016 & 41502 \\
+2017 & 40723 \\
+2018 & 42358 \\
+2019 & 43002 \\
+\bottomrule
+\end{longtable}
+
+\includegraphics{current-state-of-expungeable-records_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+\includegraphics{current-state-of-expungeable-records_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\hypertarget{percentage-of-total-cases-that-are-expungeable-under-new-law-vs-old-law}{%
+\subsection{Percentage of total cases that are expungeable (under new
+law vs old
+law)}\label{percentage-of-total-cases-that-are-expungeable-under-new-law-vs-old-law}}
+
+This compares the number of additional cases that will be expungeable
+under the new law vs.~the number of cases that were previously
+expungeable (\emph{but should now be automatic?}).
+
+\includegraphics{current-state-of-expungeable-records_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+The \texttt{Percent} column shows the percentage of total cases for that
+year that fall into each category.
+
+\begin{longtable}[]{@{}rrrr@{}}
+\toprule
+year & Eligibility & Count & Percent \\
+\midrule
+\endhead
+2009 & new\_law & 51,348 & 2.0\% \\
+2009 & old\_law & 542,491 & 20.6\% \\
+2010 & new\_law & 50,834 & 2.0\% \\
+2010 & old\_law & 528,055 & 20.6\% \\
+2011 & new\_law & 49,932 & 2.0\% \\
+2011 & old\_law & 512,694 & 20.7\% \\
+2012 & new\_law & 50,755 & 2.1\% \\
+2012 & old\_law & 493,657 & 20.4\% \\
+2013 & new\_law & 51,464 & 2.2\% \\
+2013 & old\_law & 485,856 & 20.3\% \\
+2014 & new\_law & 49,177 & 2.1\% \\
+2014 & old\_law & 466,768 & 20.1\% \\
+2015 & new\_law & 45,464 & 2.1\% \\
+2015 & old\_law & 448,924 & 20.9\% \\
+2016 & new\_law & 41,502 & 2.0\% \\
+2016 & old\_law & 432,458 & 21.3\% \\
+2017 & new\_law & 40,723 & 2.0\% \\
+2017 & old\_law & 435,669 & 20.9\% \\
+2018 & new\_law & 42,358 & 2.1\% \\
+2018 & old\_law & 432,647 & 21.0\% \\
+2019 & new\_law & 43,002 & 2.0\% \\
+2019 & old\_law & 459,581 & 21.2\% \\
+\bottomrule
+\end{longtable}
+
+\end{document}
