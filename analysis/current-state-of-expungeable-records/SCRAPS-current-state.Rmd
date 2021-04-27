@@ -15,6 +15,8 @@ library(httr)
 library(tidyverse)
 library(data.table)
 library(fs)
+library(here)
+source(here("code", "helper-functions.R"))
 ```
 
 
@@ -51,45 +53,11 @@ length(criminal_files)
 ```
 
 Here are two helper functions to pull in only the columns we need. We also rename some of them in the district court files, in order to be consistent with the naming in the circuit court files.
-```{r}
-read_district_file <- function(.f) {
-  fread(
-  .f,
-  select = c(
-    "HearingDate",
-    "person_id",
-    "CodeSection",
-    "FinalDisposition",
-    "CaseType",
-    "Charge"
-  )
-) %>% 
-  rename(
-    DispositionCode = FinalDisposition,
-    ChargeType = CaseType
-  ) %>%
-  mutate(
-      CourtType = "district"
-    )
-}
 
-read_circuit_file <- function(.f) {
-  fread(
-    .f,
-    select = c(
-      "HearingDate",
-      "person_id",
-      "CodeSection",
-      "DispositionCode",
-      "ChargeType",
-      "Charge"  
-    )
-  ) %>%
-    mutate(
-      CourtType = "circuit"
-    )
-}
-  
+
+```{r}
+.d <- read_court_file(criminal_files[50])
+.d
 ```
 
 
@@ -109,33 +77,46 @@ This is the most complicated section. Basically, I am defining a list of the "ca
   
 **Note: this may be a partial list.** We should probably go through the new law again with an LAJC lawyer to make sure we have coded this correctly.
 
-```{r pressure, echo=FALSE}
+```{r echo=FALSE}
 QUERIES <- list(
   list(
-    reference = "19.2-392.6.A",
-    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
+    # these are "deferred dismissals"
+    # these are eligible for automatic _after_ 7 years of no other convictions
+    reference = "19.2-392.6 - A",
+    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition.",
     CodeSection = c("4.1-305", "18.2-250.1"),
-    DispositionCode = c("Dismissed") 
+    DispositionCode = c("Dismissed"),
+    HearingPlea = "Guilty"
   ),
+  # these are eligible for automatic _after_ 7 years of no other convictions
   list(
-    reference = "19.2-392.6.B",
-    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
-    CodeSection = c("4.1-305", "18.2-96", "18.2-103", "18.2-119", "18.2-120", "18.2-134"),
-    DispositionCode = c("Guilty")
-  ),
-  list(
-    reference = "19.2-392.6.B-misdemeanor",
-    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
-    CodeSection = c("18.2-248.1", "18.2-250.1", "18.2-415"),
+    reference = "19.2-392.6 - B",
+    title = "Automatic sealing of offenses resulting in a conviction.",
+    CodeSection = c("4.1-305", "18.2-96", "18.2-103", "18.2-119", "18.2-120", "18.2-134", "18.2-248.1", "18.2-250.1", "18.2-415"),
     DispositionCode = c("Guilty"),
-    ChargeType = c("Misdemeanor")
+    ChargeType = c("Misdemeanor") # need to change this to be AmendedCaseType if !is.na(AmendedCaseType)
   ),
+  
+  # both of these ^ if you're convicted of something else on the same day, then you have to go through petition system
+  
+  
+  
+  # this is the petition stuff, complicated caveats below...
   list(
     reference = "19.2-392.12",
     title = "Sealing of offenses resulting in a deferred and dismissed disposition or conviction by petition.",  
     CodeSection = c("18.2-36.1", "18.2-36.2", "18.2-51.4", "18.2-51.5", "18.2-57.2", "18.2-266", "46.2-341.24"),
-    DispositionCode = c("Deferred", "Dismissed")
+    DispositionCode = c("Guilty", "Dismissed")
   )
+  
+  any (Misdemeanor, class 5 felony, or class 6 felony, except * ) AND (felony larceny (18.2-95, maybe others... Rob will get us the others))
+    are eligible for expungement ONLY by petition.
+    
+  note: the 9 misdemeanors mentioned in 19.2-392.6 should _not_ be included here because they are automatic
+    
+    
+    # these can't be expunged at all (because of federal stuff)
+    * CodeSection = c("18.2-36.1", "18.2-36.2", "18.2-51.4", "18.2-51.5", "18.2-57.2", "18.2-266", "46.2-341.24"),
 )
 ```
 
@@ -143,6 +124,10 @@ QUERIES <- list(
 Under the old law, any cases with the following dispositions should be eligible for expungement.
 
 ```{r}
+# this is 392.8 in new law
+# NO 7 year waiting period, this should automatically happen immediately
+#   IF you have no prior convictions
+#   IF you do have prior convictions, you need to go through the old petition process
 OLD_LAW <- c(
       "Dismissed", 
       "Dismissed/Other", 
@@ -154,7 +139,43 @@ OLD_LAW <- c(
       "Not Guilty/Insanity"
     )
 
+
 ```
+
+
+7 year rule: "NO convictions of any kind for 7 years from disposition date"
+
+same day rule : if you're convicted of anything that's NOT part of this same category on the same day, then it's no longer automatic and you go to petition under 19.2-392.12
+
+Misdemeanor dismissals (everything under OLD_LAW ^) 19.2-392.11 (also discussed in 19.2-392.8)
+ - automatic IF 
+   - no convictions on the person's record
+   - no arrests or charges in the past 3 years (excluding CaseType == "infraction")
+   - AND it's not a "deferral dismissal" (i.e. if plea = "guilty")
+ - if NOT ^ then its petition (same as the old law)
+
+Misdemeanor convictions (subject to 7 year rule)
+ - 19.2-392.6 - A are automatic (subject to same day rule)
+ - 19.2-392.6 - B are automatic (subject to same day rule)
+ - 19.2-392.12 are petition (subject to 7 year rule)
+   - codes explicitly listed in here are never eligible
+   - "provided that such person has (a) never been convicted of a Class 1 or 2 felony or any other felony punishable by imprisonment for life, (b) not been convicted of a Class 3 or 4 felony within the past 20 years, or (c) not been convicted of any other felony within the past 10 years of his petition."
+
+Felonies
+ - nothing is automatic
+ - 19.2-392.12 are petition (subject to 10 year rule, analogous to 7 year rule)
+   - dismissals will be immediately eligible
+   - convictions eligible "provided that such person has (a) never been convicted of a Class 1 or 2 felony or any other felony punishable by imprisonment for life, (b) not been convicted of a Class 3 or 4 felony within the past 20 years, or (c) not been convicted of any other felony within the past 10 years of his petition."
+
+
+Lifetime limit of 2 "sentencing events" that can be sealed. 
+
+There are three different levels we care about:
+ - person level
+ - the "event" level (rows on the same day)
+ - the charge level (this is the row-level)
+
+
 
 
 ### Code to filter to those cases
@@ -327,7 +348,6 @@ ggplot(counts_df, aes(x = as.factor(year), y = raw_count, fill = Eligibility)) +
 The `Percent` column shows the percentage of total cases for that year that fall into each category.
 ```{r}
 counts_df %>%
-  select(year, Eligibility, Count, Percent) %>%
-  knitr::kable(align = "r")
+  select(year, Eligibility, Count, Percent) #%>%knitr::kable(align = "r")
 ```
 

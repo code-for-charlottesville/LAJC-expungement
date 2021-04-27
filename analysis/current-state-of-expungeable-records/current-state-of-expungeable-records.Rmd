@@ -13,6 +13,8 @@ library(httr)
 library(tidyverse)
 library(data.table)
 library(fs)
+library(here)
+source(here("code", "helper-functions.R"))
 ```
 
 
@@ -24,48 +26,6 @@ We should put some brief intro about the data we're using, though I think they a
 ```{r}
 criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
 ```
-
-```{r}
-read_district_file <- function(.f) {
-  fread(
-  .f,
-  select = c(
-    "HearingDate",
-    "person_id",
-    "CodeSection",
-    "FinalDisposition",
-    "CaseType",
-    "Charge"
-  )
-) %>% 
-  rename(
-    DispositionCode = FinalDisposition,
-    ChargeType = CaseType
-  ) %>%
-  mutate(
-      CourtType = "district"
-    )
-}
-
-read_circuit_file <- function(.f) {
-  fread(
-    .f,
-    select = c(
-      "HearingDate",
-      "person_id",
-      "CodeSection",
-      "DispositionCode",
-      "ChargeType",
-      "Charge"  
-    )
-  ) %>%
-    mutate(
-      CourtType = "circuit"
-    )
-}
-  
-```
-
 
 # Filter to expungeable cases
 
@@ -161,7 +121,7 @@ Here we map over the queries to get only the relevant cases that fit _any_ of ou
 ```{r}
 purrr::map_dfr(QUERIES, function(.query) {
   filter_on_query(
-    read_district_file(str_subset(criminal_files, "district")[1]), 
+    read_court_file(criminal_files[50]), 
     .query
   )
 }) %>%
@@ -195,12 +155,7 @@ message(paste("Iterating over", length(years_files), "for", length(years), "year
 
 all_df <- purrr::map_dfr(years_files, function(.y) {
   message(paste("Parsing", .y))
-  
-  if (str_detect(.y, "circuit")) {
-    this_df <- read_circuit_file(.y)
-  } else {
-    this_df <- read_district_file(.y)
-  }
+  this_df <- read_court_file(.y)
   
   # get some counts to write out
   total <- nrow(this_df)
