@@ -66,7 +66,12 @@ read_court_file <- function(.f) {
 write_to_person_file <- function(...) {
   .row <- list(...)
   
-  person_file <- file.path(PERSON_DATA_DIR, .row$person_id)
+  # build path
+  .row$person_id <- as.character(.row$person_id)
+  .dir <- file.path(PERSON_DATA_DIR, substr(.row$person_id, 1, 5))
+  person_file <- file.path(.dir, .row$person_id)
+  
+  if (!fs::dir_exists(.dir)) fs::dir_create(.dir)
   if (!fs::file_exists(person_file)) fs::file_create(person_file)
   
   # lock file so no other process can write to it at the same time
@@ -76,13 +81,15 @@ write_to_person_file <- function(...) {
     warning(paste("Could not access", person_file, "because of lockfile problems."))
   }
   
+  # paste together into a csv row 
+  # (removing any commas in the fields that would mess up parsing)
   person_string <- paste(
-    .row$person_id,
-    .row$HearingDate,
-    .row$CodeSection,
-    .row$ChargeType,
-    .row$Class,
-    .row$DispositionCode,
+    str_replace(.row$person_id, ",", ".."),
+    str_replace(.row$HearingDate, ",", ".."),
+    str_replace(.row$CodeSection, ",", ".."),
+    str_replace(.row$ChargeType, ",", ".."),
+    str_replace(.row$Class, ",", ".."),
+    str_replace(.row$DispositionCode, ",", ".."),
     sep = ","
   )
   
@@ -91,8 +98,12 @@ write_to_person_file <- function(...) {
 
 
 read_person_file <- function(.pid) {
+  .pid <- as.character(.pid)
+  .dir <- file.path(PERSON_DATA_DIR, substr(.pid, 1, 5))
+  person_file <- file.path(.dir, .pid)
+  
   read_csv(
-    file.path(PERSON_DATA_DIR, .pid),
+    file.path(person_file),
     col_names = c(
       "person_id",
       "HearingDate",
