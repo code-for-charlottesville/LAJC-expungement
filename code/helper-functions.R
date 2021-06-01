@@ -111,8 +111,9 @@ read_person_file <- function(.pid) {
       "CodeSection",
       "ChargeType",
       "Class",
-      "DispositionCode"
+      "DispositionCode",
+      "Plea"
     ),
-    col_types = "cDcccc"
+    col_types = "cDccccc"
   )
 }
