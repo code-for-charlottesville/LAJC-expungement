@@ -90,6 +90,7 @@ write_to_person_file <- function(...) {
     str_replace(.row$ChargeType, ",", ".."),
     str_replace(.row$Class, ",", ".."),
     str_replace(.row$DispositionCode, ",", ".."),
+    str_replace(.row$Plea, ",", ".."),
     sep = ","
   )
   

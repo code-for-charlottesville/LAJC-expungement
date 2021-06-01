@@ -1,0 +1,21 @@
+
+Version: 1
+
+Packages:
+  - devtools
+  - renv
+  - tidyverse
+  - furrr
+  - future
+  - fs
+  - here
+  - filelock
+  - lubridate
+  - data.table
+  - glue
+  
+Repos:
+  - MPN: https://mpn.metworx.com/snapshots/stable/2021-04-15
+  - CRAN: https://cran.rstudio.com
+
+Library: /home/rstudio/R/x86_64-pc-linux-gnu-library/4.1/
