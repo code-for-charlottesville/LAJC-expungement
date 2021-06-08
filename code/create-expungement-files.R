@@ -13,7 +13,7 @@ COUNTS_FILE <- "/home/rstudio/expunge_counts.csv"
 if (fs::file_exists(COUNTS_FILE)) fs::file_delete(COUNTS_FILE)
 write_lines("person_id,automatic,petition,not_eligible,old_petition,old_not_eligible", COUNTS_FILE)
 
-person_dirs <- fs::dir_ls("/home/rstudio/persondata")[1:5]
+person_dirs <- fs::dir_ls("/home/rstudio/persondata")
 write_lines(paste("***", Sys.time(), "-- Found", length(person_dirs), " directories to process..."), LOG_FILE, append = TRUE)
 
 walk(person_dirs, function(.d) {
