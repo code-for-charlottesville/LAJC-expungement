@@ -3,6 +3,7 @@ suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(filelock))
 
 PERSON_DATA_DIR <- "~/persondata"
+EXPUNGE_DATA_DIR <- "~/expungedata"
 
 #####################
 # reading court data
@@ -116,4 +117,45 @@ read_person_file <- function(.pid) {
     ),
     col_types = "cDccccc"
   )
+}
+
+
+write_expungeable_counts <- function(res, outfile) {
+  
+  person_id <- res$person_id[1]
+  automatic <- sum(res$expungable == "Automatic")
+  petition <- sum(res$expungable == "Petition")
+  not_eligible <- sum(res$expungable == "Not eligible")
+  old_petition <- sum(res$old_expunge)
+  old_not_eligible <- sum(res$old_expunge == FALSE)
+  
+  out_string <- paste(
+    person_id,
+    automatic,
+    petition,
+    not_eligible,
+    old_petition,
+    old_not_eligible,
+    sep = ","
+  )
+  
+  # lock file so no other process can write to it at the same time
+  .l <- lock(outfile, timeout = 5000)
+  on.exit(unlock(.l))
+  if (is.null(.l)) {
+    warning(paste("Could not access", person_file, "because of lockfile problems."))
+  }
+  
+  write_lines(out_string, outfile, append = TRUE)
+}
+
+
+write_expunge_person_file <- function(res) {
+  # build path
+  person_id <- as.character(res$person_id[1])
+  .dir <- file.path(EXPUNGE_DATA_DIR, substr(person_id, 1, 5))
+  person_file <- file.path(.dir, person_id)
+  
+  if (!fs::dir_exists(.dir)) fs::dir_create(.dir)
+  write_csv(res, person_file)
 }

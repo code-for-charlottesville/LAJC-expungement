@@ -4,7 +4,7 @@ library(fs)
 library(here)
 source(here("code", "helper-functions.R"))
 
-LOG_FILE <- "create-person-files.log"
+LOG_FILE <- here("logs", "create-person-files.log")
 if (fs::file_exists(LOG_FILE)) fs::file_delete(LOG_FILE)
 fs::file_create(LOG_FILE)
 
