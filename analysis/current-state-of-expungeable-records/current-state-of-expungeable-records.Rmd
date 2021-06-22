@@ -9,7 +9,6 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 
 ```{r, message=F}
 # first you need to install these packages
-library(httr)
 library(tidyverse)
 library(data.table)
 library(fs)
