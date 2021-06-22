@@ -17,7 +17,7 @@ classify_ex <- function(id){
   Bmis <- c("18.2-248.1")
   Twelve <- c("18.2-36.1","18.2-36.2","18.2-51.4","18.2-51.5","18.2-57.2","18.2-266","46.2-341.24")
   
-  yearfun <- function(data, row, end = "2025-10-1", y=7, felony=FALSE){
+  yearfun <- function(data, row, end = "2050-01-01", y=7, felony=FALSE){
     require(lubridate)
     date <- data[row,]$HearingDate
     enddate <- data[row,]$HearingDate %m+% years(y)
@@ -37,11 +37,15 @@ classify_ex <- function(id){
   data$tenyear <- NA
   data$arrests <- NA
   data$anyfelony <- NA
+  data$sevenyearpending <- NA
+  data$tenyearpending <- NA
   for(i in 1:nrow(data)){
     data[i,]$sevenyear <- yearfun(data, row=i, felony=FALSE)
     data[i,]$tenyear <- yearfun(data, row=i, y=10, felony=TRUE) 
     data[i,]$arrests <- yearfun(data, row=i, y=-3, felony=FALSE) 
     data[i,]$anyfelony <- yearfun(data, row=i, y=-10, felony=TRUE)
+    data[i,]$sevenyearpending <- yearfun(data, row=i, end = "2020-01-01", felony=FALSE)
+    data[i,]$tenyearpending <- yearfun(data, row=i, end = "2020-01-01", y=10, felony=TRUE) 
   }
   
   data <- data %>%
@@ -78,20 +82,29 @@ classify_ex <- function(id){
                                 "covered in 19.2-392.12",
                                 "covered elsewhere")
   levels(data$chargetype) <- c("Misdemeanor", "Felony")
+
+  calculate_expungement <- function(data) {
+    data <- data %>%
+      mutate(expungable = predict(expunge_coder, newdata=data)) %>%
+      group_by(HearingDate) %>%
+      mutate(nonauto_count_day = sum(expungable != "Automatic")) %>%
+      ungroup() %>%
+      arrange(HearingDate) %>%
+      mutate(totalexpunge = cumsum(expungable %in% c("Automatic", "Petition")))
+    
+    data$expungable[data$totalexpunge > 2] <- "Not eligible"
+    data$expungable[data$expungable == "Automatic" & data$nonauto_count_day > 1] <- "Petition"
+    data
+  }
+  
+  data <- calculate_expungement(data)
+  pendingdata <- calculate_expungement(mutate(data, sevenyear = sevenyearpending, tenyear = tenyearpending))
   
   data <- data %>%
-    mutate(expungable = predict(expunge_coder, newdata=data)) %>%
-    group_by(HearingDate) %>%
-    mutate(nonauto_count_day = sum(expungable != "Automatic")) %>%
-    ungroup() %>%
-    arrange(HearingDate) %>%
-    mutate(totalexpunge = cumsum(expungable %in% c("Automatic", "Petition")))
-  
-  data$expungable[data$totalexpunge > 2] <- "Not eligible"
-  data$expungable[data$expungable == "Automatic" & data$nonauto_count_day > 1] <- "Petition"
-  
-  data <- data %>%
-    mutate(old_expunge = (disposition != "Conviction"))
+    mutate(
+      expungable_pending = pull(pendingdata, expungable),
+      old_expunge = (disposition != "Conviction")
+    )
   
   return(data)
 }
