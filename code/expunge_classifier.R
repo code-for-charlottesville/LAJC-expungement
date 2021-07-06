@@ -17,7 +17,7 @@ classify_ex <- function(id){
   Bmis <- c("18.2-248.1")
   Twelve <- c("18.2-36.1","18.2-36.2","18.2-51.4","18.2-51.5","18.2-57.2","18.2-266","46.2-341.24")
   
-  yearfun <- function(data, row, end = "2050-01-01", y=7, felony=FALSE){
+  yearfun <- function(data, row, end, y, felony=FALSE){
     require(lubridate)
     date <- data[row,]$HearingDate
     enddate <- data[row,]$HearingDate %m+% years(y)
@@ -33,6 +33,16 @@ classify_ex <- function(id){
     return(sevenyear)
   }
   
+  yearfun_petition <- function(data, row, petition, y, felony=FALSE){
+    require(lubridate)
+    cutoff <- as.Date(petition)  %m-% years(y)
+    daterange <- data$HearingDate > cutoff
+    df <- data[daterange,]
+    sevenyear <- sum(df$DispositionCode == "Guilty") > 0
+    if(felony) sevenyear <- sevenyear & (sum(df$ChargeType == "Felony") > 0)
+    return(sevenyear)
+  }
+  
   data$sevenyear <- NA
   data$tenyear <- NA
   data$arrests <- NA
@@ -40,12 +50,14 @@ classify_ex <- function(id){
   data$sevenyearpending <- NA
   data$tenyearpending <- NA
   for(i in 1:nrow(data)){
-    data[i,]$sevenyear <- yearfun(data, row=i, felony=FALSE)
-    data[i,]$tenyear <- yearfun(data, row=i, y=10, felony=TRUE) 
-    data[i,]$arrests <- yearfun(data, row=i, y=-3, felony=FALSE) 
-    data[i,]$anyfelony <- yearfun(data, row=i, y=-10, felony=TRUE)
-    data[i,]$sevenyearpending <- yearfun(data, row=i, end = "2020-01-01", felony=FALSE)
-    data[i,]$tenyearpending <- yearfun(data, row=i, end = "2020-01-01", y=10, felony=TRUE) 
+    data[i,]$sevenyear <- yearfun(data, row=i, end = "2020-01-01", y = 7, felony=FALSE)
+    data[i,]$tenyear <- yearfun(data, row=i, end = "2020-01-01", y=10, felony=TRUE) ###### only 19.2-392.12
+    data[i,]$sevenyearpending <- yearfun(data, row=i, end = "2070-01-01", y=7, felony=FALSE)
+    data[i,]$tenyearpending <- yearfun(data, row=i, end = "2070-01-01", y=10, felony=TRUE)  ###### only 19.2-392.12
+    data[i,]$arrests <- yearfun(data, row=i, end = "2020-01-01", y=-3, felony=FALSE) ###### should this actually be from petition date?????
+    data[i,]$anyfelony <- yearfun_petition(data, row=i, petition = "2020-01-01", y=10, felony=TRUE)
+    data[i,]$anyfelonypending <- yearfun_petition(data, row=i, petition = "2070-01-01", y=10, felony=TRUE)
+
   }
   
   data <- data %>%
@@ -98,7 +110,14 @@ classify_ex <- function(id){
   }
   
   data <- calculate_expungement(data)
-  pendingdata <- calculate_expungement(mutate(data, sevenyear = sevenyearpending, tenyear = tenyearpending))
+  pendingdata <- calculate_expungement(
+    mutate(
+      data, 
+      sevenyear = sevenyearpending, 
+      tenyear = tenyearpending,
+      anyfelony = anyfelonypending
+    )
+  )
   
   data <- data %>%
     mutate(
