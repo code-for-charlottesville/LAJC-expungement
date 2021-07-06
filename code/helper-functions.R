@@ -128,6 +128,9 @@ write_expungeable_counts <- function(res, outfile) {
   not_eligible <- sum(res$expungable == "Not eligible")
   old_petition <- sum(res$old_expunge)
   old_not_eligible <- sum(res$old_expunge == FALSE)
+  automatic_pending <- sum(res$expungable_pending == "Automatic")
+  petition_pending <- sum(res$expungable_pending == "Petition")
+  not_eligible_pending <- sum(res$expungable_pending == "Not eligible")
   
   out_string <- paste(
     person_id,

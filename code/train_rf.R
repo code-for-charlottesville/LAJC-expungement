@@ -9,7 +9,6 @@ codesection <- c("covered in 19.2-392.6 - A",
                  "covered in 19.2-392.12",
                  "covered elsewhere")
 sevenyear <- c(FALSE, TRUE)
-tenyear <- c(FALSE, TRUE)
 anyconvict <- c(FALSE, TRUE)
 arrests <- c(FALSE, TRUE)
 class1_2 <- c(FALSE, TRUE)
@@ -17,12 +16,12 @@ class3_4 <- c(FALSE, TRUE)
 anyfelony <- c(FALSE, TRUE) # 10 years
 
 cases <- expand.grid(chargetype, disposition,codesection,
-                     sevenyear, tenyear, 
+                     sevenyear,
                      anyconvict, arrests, class1_2,
                      class3_4, anyfelony)
 
 colnames(cases) <- c("chargetype", "disposition","codesection",
-                     "sevenyear", "tenyear", 
+                     "sevenyear", 
                      "anyconvict", "arrests", "class1_2",
                      "class3_4", "anyfelony")
 
@@ -66,7 +65,7 @@ cases$expungability[S6] <- "Petition"
 S7 <- cases$chargetype == "Felony" &
   cases$codesection == "covered in 19.2-392.12" & 
   cases$disposition == "Conviction" &
-  !cases$tenyear & !cases$class1_2 & !cases$class3_4 & !cases$anyfelony
+  !cases$class1_2 & !cases$class3_4 & !cases$anyfelony
 cases$expungability[S7] <- "Petition"
 
 cases <- cases %>%

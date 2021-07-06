@@ -81,16 +81,13 @@ classify_ex <- function(id){
   }
   
   data$sevenyear <- NA
-  data$tenyear <- NA
+  data$sevenyearpending <- NA
   data$arrests <- NA
   data$anyfelony <- NA
-  data$sevenyearpending <- NA
-  data$tenyearpending <- NA
+  data$anyfelonypending <- NA
   for(i in 1:nrow(data)){
     data[i,]$sevenyear <- yearfun(data, row=i, end = "2020-01-01", y = 7, felony=FALSE)
-    data[i,]$tenyear <- yearfun(data, row=i, end = "2020-01-01", y=10, felony=TRUE) ###### only 19.2-392.12
     data[i,]$sevenyearpending <- yearfun(data, row=i, end = "2070-01-01", y=7, felony=FALSE)
-    data[i,]$tenyearpending <- yearfun(data, row=i, end = "2070-01-01", y=10, felony=TRUE)  ###### only 19.2-392.12
     data[i,]$arrests <- yearfun(data, row=i, end = "2020-01-01", y=-3, felony=FALSE) ###### should this actually be from petition date?????
     data[i,]$anyfelony <- yearfun_petition(data, row=i, petition = "2020-01-01", y=10, felony=TRUE)
     data[i,]$anyfelonypending <- yearfun_petition(data, row=i, petition = "2070-01-01", y=10, felony=TRUE)
@@ -117,7 +114,6 @@ classify_ex <- function(id){
     mutate(
       data, 
       sevenyear = sevenyearpending, 
-      tenyear = tenyearpending,
       anyfelony = anyfelonypending
     )
   )
