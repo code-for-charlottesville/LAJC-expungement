@@ -17,6 +17,43 @@ classify_ex <- function(id){
   Bmis <- c("18.2-248.1")
   Twelve <- c("18.2-36.1","18.2-36.2","18.2-51.4","18.2-51.5","18.2-57.2","18.2-266","46.2-341.24")
   
+  # process disposition and charge type
+  data <- data %>%
+    mutate(chargetype = ChargeType,
+           disposition = DispositionCode,
+           disposition = as.character(fct_recode(disposition,
+                                                 "Dismissed" = "Nolle Prosequi",
+                                                 "Conviction" = "Guilty In Absentia",
+                                                 "Conviction" = "Guilty",
+                                                 "Dismissed" = "Not Guilty")),
+           disposition = ifelse(Plea %in% c("Alford", "Guilty", "Nolo Contendere") & disposition == "Dismissed",
+                                "Deferral Dismissal", 
+                                disposition),
+           codesection = "covered elsewhere",
+           codesection = ifelse(CodeSection %in% B | CodeSection %in% Bmis, "covered in 19.2-392.6 - B", codesection),
+           codesection = ifelse(CodeSection=="4.1-305" & disposition == "Deferral Dismissal", "covered in 19.2-392.6 - A", codesection),
+           codesection = ifelse(CodeSection=="18.2-250.1", "covered in 19.2-392.6 - A", codesection),
+           codesection = ifelse(CodeSection %in% Twelve, "covered in 19.2-392.12", codesection),
+           chargetype = as.factor(chargetype),
+           disposition = as.factor(disposition),
+           codesection = as.factor(codesection),
+           anyconvict = any(disposition == "Guilty"),
+           class1_2 = any(Class %in% c("1", "2") & chargetype=="Felony"),
+           class1_2 = ifelse(is.na(class1_2), FALSE, class1_2),
+           class3_4 = any(Class %in% c("3", "4") & chargetype=="Felony"),
+           class3_4 = ifelse(is.na(class3_4), FALSE, class3_4))
+  
+  data <- filter(data, disposition %in% c("Conviction", "Dismissed", "Deferral Dismissal")) %>%
+    mutate(disposition = as.factor(as.character(disposition)))
+  
+  levels(data$disposition) <- c("Conviction", "Dismissed", "Deferral Dismissal")
+  levels(data$codesection) <- c("covered in 19.2-392.6 - A",
+                                "covered in 19.2-392.6 - B",
+                                "covered in 19.2-392.12",
+                                "covered elsewhere")
+  levels(data$chargetype) <- c("Misdemeanor", "Felony")
+  
+  # proces year-related rules
   yearfun <- function(data, row, end, y, felony=FALSE){
     require(lubridate)
     date <- data[row,]$HearingDate
@@ -59,42 +96,8 @@ classify_ex <- function(id){
     data[i,]$anyfelonypending <- yearfun_petition(data, row=i, petition = "2070-01-01", y=10, felony=TRUE)
 
   }
-  
-  data <- data %>%
-    mutate(chargetype = ChargeType,
-           disposition = DispositionCode,
-           disposition = as.character(fct_recode(disposition,
-                                                 "Dismissed" = "Nolle Prosequi",
-                                                 "Conviction" = "Guilty In Absentia",
-                                                 "Conviction" = "Guilty",
-                                                 "Dismissed" = "Not Guilty")),
-           disposition = ifelse(Plea %in% c("Alford", "Guilty", "Nolo Contendere") & disposition == "Dismissed",
-                                "Deferral Dismissal", 
-                                disposition),
-           codesection = "covered elsewhere",
-           codesection = ifelse(CodeSection %in% B | CodeSection %in% Bmis, "covered in 19.2-392.6 - B", codesection),
-           codesection = ifelse(CodeSection=="4.1-305" & disposition == "Deferral Dismissal", "covered in 19.2-392.6 - A", codesection),
-           codesection = ifelse(CodeSection=="18.2-250.1", "covered in 19.2-392.6 - A", codesection),
-           codesection = ifelse(CodeSection %in% Twelve, "covered in 19.2-392.12", codesection),
-           chargetype = as.factor(chargetype),
-           disposition = as.factor(disposition),
-           codesection = as.factor(codesection),
-           anyconvict = any(disposition == "Guilty"),
-           class1_2 = any(Class %in% c("1", "2") & chargetype=="Felony"),
-           class1_2 = ifelse(is.na(class1_2), FALSE, class1_2),
-           class3_4 = any(Class %in% c("3", "4") & chargetype=="Felony"),
-           class3_4 = ifelse(is.na(class3_4), FALSE, class3_4))
-  
-  data <- filter(data, disposition %in% c("Conviction", "Dismissed", "Deferral Dismissal")) %>%
-    mutate(disposition = as.factor(as.character(disposition)))
-  
-  levels(data$disposition) <- c("Conviction", "Dismissed", "Deferral Dismissal")
-  levels(data$codesection) <- c("covered in 19.2-392.6 - A",
-                                "covered in 19.2-392.6 - B",
-                                "covered in 19.2-392.12",
-                                "covered elsewhere")
-  levels(data$chargetype) <- c("Misdemeanor", "Felony")
 
+  # run algorithm to predict expungement
   calculate_expungement <- function(data) {
     data <- data %>%
       mutate(expungable = predict(expunge_coder, newdata=data)) %>%
