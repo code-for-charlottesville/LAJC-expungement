@@ -98,3 +98,37 @@ res_cna <- res %>%
 print(paste(res_cna, "missing CodeSection in full data"))
 ```
 
+# Examples of rare dispositions
+
+Looking for examples of these
+
+* Complied with Law
+* Resolved
+* Certified Misdemeanor
+* Granted
+* Denied
+
+```{r, eval=FALSE}
+# don't eval when knitting
+
+our_dispositions <- c(
+  "Complied With Law",
+  "Resolved",
+  "Certified Misdemeanor",
+  "Granted",
+  "Denied"
+)
+
+criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
+print(paste("Processing", length(criminal_files), "files..."))
+
+res <- imap_dfr(criminal_files,  ~ {
+  if (.y %% 10 == 0) cat(paste("$", .y, "$"))
+  
+  suppressWarnings(read_court_file(.x)) %>%
+    filter(DispositionCode %in% our_dispositions)
+})
+cat("\n")
+
+```
+
