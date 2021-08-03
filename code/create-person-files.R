@@ -15,7 +15,7 @@ write_lines(paste("***", Sys.time(), "-- Found", length(criminal_files), "to pro
 
 # Use this for testing, and comment out the future_walk() below until you're ready to rock
 # .d <- read_court_file(criminal_files[100])
-# pwalk(slice_head(.d, n=1000), write_to_person_file)
+# pwalk(slice_head(.d, n=10000), write_to_person_file)
 
 future_walk(criminal_files, function(.f) {
   write_lines(paste("********", Sys.time(), "-- Starting", .f), LOG_FILE, append = TRUE)

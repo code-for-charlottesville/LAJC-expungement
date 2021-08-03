@@ -183,3 +183,17 @@ write_expunge_person_file <- function(res) {
   if (!fs::dir_exists(.dir)) fs::dir_create(.dir)
   write_csv(res, person_file)
 }
+
+
+write_expunge_person_file_BIG <- function(res) {
+  
+  # lock file so no other process can write to it at the same time
+  .l <- lock(paste0(EXPUNGE_BIG_FILE, ".lck"), timeout = 10000)
+  on.exit(unlock(.l))
+  if (is.null(.l)) {
+    warning(paste("Could not access", EXPUNGE_BIG_FILE, "because of lockfile problems."))
+  }
+  
+  write_csv(res, EXPUNGE_BIG_FILE, append = TRUE)
+}
+
