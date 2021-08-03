@@ -2,8 +2,9 @@ suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(filelock))
 
-PERSON_DATA_DIR <- "~/persondata"
-EXPUNGE_DATA_DIR <- "~/expungedata"
+PERSON_DATA_DIR <- "~/persondata2"
+EXPUNGE_DATA_DIR <- "~/expungedata2"
+EXPUNGE_BIG_FILE <- "~/BIG_expungefile.csv"
 
 #####################
 # reading court data
@@ -14,17 +15,23 @@ read_district_file <- function(.f) {
   fread(
     .f,
     select = c(
+      "Locality",
       "HearingDate",
       "person_id",
       "CodeSection",
       "FinalDisposition",
       "CaseType",
-      "Charge"
+      "Charge",
+      "Class",
+      "Race",
+      "Gender",
+      "fips"
     )
   ) %>% 
     rename(
       DispositionCode = FinalDisposition,
-      ChargeType = CaseType
+      ChargeType = CaseType,
+      Sex = Gender
     ) %>%
     mutate(
       CourtType = "district"
@@ -35,12 +42,17 @@ read_circuit_file <- function(.f) {
   fread(
     .f,
     select = c(
+      "Locality",
       "HearingDate",
       "person_id",
       "CodeSection",
       "DispositionCode",
       "ChargeType",
-      "Charge"  
+      "Charge",
+      "Class",
+      "Race",
+      "Sex",
+      "fips"
     )
   ) %>%
     mutate(
@@ -92,6 +104,10 @@ write_to_person_file <- function(...) {
     str_replace(.row$Class, ",", ".."),
     str_replace(.row$DispositionCode, ",", ".."),
     str_replace(.row$Plea, ",", ".."),
+    str_replace(.row$Race, ",", ".."),
+    str_replace(.row$Sex, ",", ".."),
+    str_replace(.row$fips, ",", ".."),
+    str_replace(.row$Locality, ",", ".."),
     sep = ","
   )
   
@@ -113,9 +129,13 @@ read_person_file <- function(.pid) {
       "ChargeType",
       "Class",
       "DispositionCode",
-      "Plea"
+      "Plea",
+      "Race",
+      "Sex",
+      "fips",
+      "Locality"
     ),
-    col_types = "cDccccc"
+    col_types = "cDccccccccc"
   )
 }
 
@@ -125,17 +145,18 @@ write_expungeable_counts <- function(res, outfile) {
   person_id <- res$person_id[1]
   automatic <- sum(res$expungable == "Automatic")
   petition <- sum(res$expungable == "Petition")
+  automatic_pending <- sum(res$expungable == "Automatic (pending)")
+  petition_pending <- sum(res$expungable == "Petition (pending)")
   not_eligible <- sum(res$expungable == "Not eligible")
-  old_petition <- sum(res$old_expunge)
-  old_not_eligible <- sum(res$old_expunge == FALSE)
-  automatic_pending <- sum(res$expungable_pending == "Automatic")
-  petition_pending <- sum(res$expungable_pending == "Petition")
-  not_eligible_pending <- sum(res$expungable_pending == "Not eligible")
+  old_petition <- sum(res$old_expungable)
+  old_not_eligible <- sum(res$old_expungable == FALSE)
   
   out_string <- paste(
     person_id,
     automatic,
     petition,
+    automatic_pending,
+    petition_pending,
     not_eligible,
     old_petition,
     old_not_eligible,

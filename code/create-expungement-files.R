@@ -4,16 +4,16 @@ library(here)
 source(here("code", "helper-functions.R"))
 source(here("code", "expunge_classifier.R"))
 
-LOG_FILE <- here("logs", "create-expungement-files.log")
+LOG_FILE <- here("logs", "create-expungement-files2.log")
 if (fs::file_exists(LOG_FILE)) fs::file_delete(LOG_FILE)
 fs::file_create(LOG_FILE)
 
 # set up counts file
-COUNTS_FILE <- "/home/rstudio/expunge_counts.csv"
+COUNTS_FILE <- "/home/rstudio/expunge_counts2.csv"
 if (fs::file_exists(COUNTS_FILE)) fs::file_delete(COUNTS_FILE)
-write_lines("person_id,automatic,petition,not_eligible,old_petition,old_not_eligible", COUNTS_FILE)
+write_lines("person_id,automatic,petition,automatic_pending,petition_pending,not_eligible,old_petition,old_not_eligible", COUNTS_FILE)
 
-person_dirs <- fs::dir_ls("/home/rstudio/persondata")
+person_dirs <- fs::dir_ls(PERSON_DATA_DIR)
 write_lines(paste("***", Sys.time(), "-- Found", length(person_dirs), " directories to process..."), LOG_FILE, append = TRUE)
 
 walk(person_dirs, function(.d) {
