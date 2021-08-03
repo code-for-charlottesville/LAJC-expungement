@@ -139,6 +139,11 @@ classify_ex <- function(id){
   #Rationales
   tree <- getTree(expunge_coder, labelVar=TRUE) #tree
   nodes <- attr(predict(expunge_coder, newdata=data, nodes=TRUE), "nodes")
+  ##### HACK
+  if (length(nodes) != nrow(data)) {
+    nodes <- c(nodes, rep(999, nrow(data) - length(nodes)))
+  }
+  ######
   data$node <- nodes
   data <- left_join(data, NODE_ENCODE, by="node")
   data <- dplyr::select(data, all_of(orig_cols), expungable, reason, old_expungable)
