@@ -1,8 +1,11 @@
 library(tidyverse)
 library(fs)
+library(furrr)
 library(here)
 source(here("code", "helper-functions.R"))
 source(here("code", "expunge_classifier.R"))
+
+plan(multisession(workers = availableCores() - 1))
 
 LOG_FILE <- here("logs", "create-expungement-files2.log")
 if (fs::file_exists(LOG_FILE)) fs::file_delete(LOG_FILE)
@@ -16,7 +19,7 @@ write_lines("person_id,automatic,petition,automatic_pending,petition_pending,not
 person_dirs <- fs::dir_ls(PERSON_DATA_DIR)
 write_lines(paste("***", Sys.time(), "-- Found", length(person_dirs), " directories to process..."), LOG_FILE, append = TRUE)
 
-walk(person_dirs, function(.d) {
+future_walk(person_dirs, function(.d) {
   
   person_files <- fs::dir_ls(.d) %>% 
     str_subset(".lck$", negate = TRUE) %>% 
@@ -37,6 +40,7 @@ walk(person_dirs, function(.d) {
     if (nrow(res) > 0) {
       write_expungeable_counts(res, COUNTS_FILE)
       write_expunge_person_file(res)
+      write_expunge_person_file_BIG(res)
     }
   })
   write_lines(paste("********", Sys.time(), "-- Finished", .d), LOG_FILE, append = TRUE)
