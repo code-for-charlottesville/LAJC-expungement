@@ -4,6 +4,24 @@ library(here)
 source(here("code", "helper-functions.R"))
 NODE_ENCODE <- readr::read_csv(here("data", "reasons_encode.csv"), col_types = "ic")
 
+#' Classifier helper function for parsing year-related rules
+yearfun <- function(data, row, end = "2020-12-31", y=7, felony=FALSE){
+  require(lubridate)
+  date <- data[row,]$HearingDate
+  enddate <- data[row,]$HearingDate %m+% years(y)
+  if(enddate > as.Date(end)){
+    sevenyear <- TRUE
+  } else {
+    if(y>0) daterange <- data$HearingDate > date & data$HearingDate <= enddate
+    if(y<0) daterange <- data$HearingDate <= date & data$HearingDate > enddate
+    df <- data[daterange,]
+    sevenyear <- sum(df$DispositionCode == "Guilty") > 0
+    if(felony) sevenyear <- sevenyear & (sum(df$ChargeType == "Felony") > 0)
+  }
+  return(sevenyear)
+}
+
+#' The classifier
 classify_ex <- function(id){
   
   data <- read_person_file(id)
@@ -11,7 +29,26 @@ classify_ex <- function(id){
   load(here("data", "expunge_coder.Rdata"))
   
   orig_cols <- colnames(data)
-  data <- filter(data, ChargeType != "Infraction")
+  
+  # exclude some rows based on LAJC feedback
+  data <- data %>%
+    filter(ChargeType %in% c("Misdemeanor", "Felony")) %>% 
+    filter(
+      DispositionCode %in% c(
+        "Guilty",
+        "Guilty In Absentia",
+        "Dismissed",
+        "Nolle Prosequi",
+        "Not Guilty",
+        "Not Guilty/Acquitted",
+        "No Indictment Presented",
+        "Not True Bill",
+        # "Resolved", #??
+        "Dismissed/Other"
+      )
+    )
+  
+  
   if(nrow(data) == 0) return(data)
   
   A <- c("4.1-305", "18.2-250.1")
@@ -35,8 +72,15 @@ classify_ex <- function(id){
            disposition = DispositionCode,
            disposition = as.character(fct_recode(disposition,
                                                  "Dismissed" = "Nolle Prosequi",
+                                                 "Dismissed" = "No Indictment Presented",
+                                                 "Dismissed" = "Not True Bill",
+                                                 "Dismissed" = "Dismissed/Other",
+                                                 "Dismissed" = "Not Guilty",
+                                                 "Dismissed" = "Not Guilty/Acquitted",
+                                                 # "Dismissed" = "Resolved", #??
                                                  "Conviction" = "Guilty In Absentia",
-                                                 "Conviction" = "Guilty")),
+                                                 "Conviction" = "Guilty"
+                                                 )),
            disposition = ifelse(Plea %in% c("Alford", "Guilty", "Nolo Contendere") & disposition == "Dismissed",
                                 "Deferral Dismissal", 
                                 disposition),

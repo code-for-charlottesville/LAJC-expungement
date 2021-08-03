@@ -6,6 +6,7 @@ source(here("code", "helper-functions.R"))
 source(here("code", "expunge_classifier.R"))
 
 plan(multisession(workers = availableCores() - 1))
+options('future.rng.onMisuse' = "ignore")
 
 LOG_FILE <- here("logs", "create-expungement-files2.log")
 if (fs::file_exists(LOG_FILE)) fs::file_delete(LOG_FILE)
