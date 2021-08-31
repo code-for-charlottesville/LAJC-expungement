@@ -24,7 +24,8 @@ yearfun <- function(data, row, end = "2020-12-31", y=7, felony=FALSE){
 #' The classifier
 classify_ex <- function(id){
   
-  data <- read_person_file(id)
+  data <- read_person_file(id) %>%
+    replace_na(list(CodeSection = "MISSING"))
 
   load(here("data", "expunge_coder.Rdata"))
   
@@ -89,21 +90,17 @@ classify_ex <- function(id){
            codesection = ifelse(CodeSection=="4.1-305" & disposition == "Deferral Dismissal", "covered in 19.2-392.6 - A", codesection),
            codesection = ifelse(CodeSection=="18.2-250.1", "covered in 19.2-392.6 - A", codesection),
            codesection = ifelse(CodeSection %in% Twelve, "covered in 19.2-392.12", codesection),
-           chargetype = as.factor(chargetype),
-           disposition = as.factor(disposition),
-           codesection = as.factor(codesection),
-           anyconvict = any(disposition == "Guilty"),
+           chargetype = factor(chargetype, levels = c("Misdemeanor", "Felony")),
+           disposition = factor(disposition, levels = c("Conviction", "Dismissed", "Deferral Dismissal")),
+           codesection = factor(codesection, levels = c("covered in 19.2-392.6 - A",
+                                                           "covered in 19.2-392.6 - B",
+                                                           "covered in 19.2-392.12",
+                                                           "covered elsewhere")),
+           anyconvict = any(disposition == "Conviction"),
            class1_2 = any(Class %in% c("1", "2") & chargetype=="Felony"),
            class1_2 = ifelse(is.na(class1_2), FALSE, class1_2),
            class3_4 = any(Class %in% c("3", "4") & chargetype=="Felony"),
            class3_4 = ifelse(is.na(class3_4), FALSE, class3_4))
-  
-  levels(data$disposition) <- c("Conviction", "Dismissed", "Deferral Dismissal")
-  levels(data$codesection) <- c("covered in 19.2-392.6 - A",
-                                "covered in 19.2-392.6 - B",
-                                "covered in 19.2-392.12",
-                                "covered elsewhere")
-  levels(data$chargetype) <- c("Misdemeanor", "Felony")
   
   data <- data %>%
     mutate(expungable = predict(expunge_coder, newdata=data)) %>%
@@ -139,11 +136,6 @@ classify_ex <- function(id){
   #Rationales
   tree <- getTree(expunge_coder, labelVar=TRUE) #tree
   nodes <- attr(predict(expunge_coder, newdata=data, nodes=TRUE), "nodes")
-  ##### HACK
-  if (length(nodes) != nrow(data)) {
-    nodes <- c(nodes, rep(999, nrow(data) - length(nodes)))
-  }
-  ######
   data$node <- nodes
   data <- left_join(data, NODE_ENCODE, by="node")
   data <- dplyr::select(data, all_of(orig_cols), expungable, reason, old_expungable)
