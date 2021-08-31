@@ -2,9 +2,9 @@ suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(filelock))
 
-PERSON_DATA_DIR <- "~/persondata2"
-EXPUNGE_DATA_DIR <- "~/expungedata2"
-EXPUNGE_BIG_FILE <- "~/BIG_expungefile.csv"
+PERSON_DATA_DIR <- "~/persondata4"
+EXPUNGE_DATA_DIR <- "~/expungedata4"
+EXPUNGE_BIG_FILE <- "~/BIG_expungefile4.csv"
 
 #####################
 # reading court data
@@ -20,6 +20,7 @@ read_district_file <- function(.f) {
       "person_id",
       "CodeSection",
       "FinalDisposition",
+      "HearingPlea",
       "CaseType",
       "Charge",
       "Class",
@@ -30,6 +31,7 @@ read_district_file <- function(.f) {
   ) %>% 
     rename(
       DispositionCode = FinalDisposition,
+      Plea = HearingPlea,
       ChargeType = CaseType,
       Sex = Gender
     ) %>%
@@ -47,6 +49,7 @@ read_circuit_file <- function(.f) {
       "person_id",
       "CodeSection",
       "DispositionCode",
+      "HearingPlea",
       "ChargeType",
       "Charge",
       "Class",
@@ -55,6 +58,9 @@ read_circuit_file <- function(.f) {
       "fips"
     )
   ) %>%
+    rename(
+      Plea = HearingPlea
+    ) %>%
     mutate(
       CourtType = "circuit"
     )
@@ -78,7 +84,7 @@ read_court_file <- function(.f) {
 # use this with pwalk
 write_to_person_file <- function(...) {
   .row <- list(...)
-  
+  browser()
   # build path
   .row$person_id <- as.character(.row$person_id)
   .dir <- file.path(PERSON_DATA_DIR, substr(.row$person_id, 1, 5))
