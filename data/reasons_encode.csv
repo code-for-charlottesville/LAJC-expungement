@@ -1,17 +1,22 @@
 node,reason
-5, Conviction with a prior class 3 or 4 felony conviction within the past 20 years
-9, Conviction and convicted of another felony within the past 10 years of the petition
-11," Not convicted, misdemeanor, but prior convictions on the person's record"
-12," Not convicted, felony charge covered in 19.2-392.12"
-13," Not convicted, felony charge covered in a section other than 19.2-392.12"
-15," Conviction, previously convicted of a class 1 or 2 felony or any other felony punishable by imprisonment for life"
-17, Deferred dismissal of a misdemeanor charge with no prior convictions on the person's record
-20, Dismissal of misdemeanor charges with no prior convictions on the person's record and no arrests or charges in the past 3 years
-21," Dismissal of misdemeanor charges with no prior convictions on the person's record, but with arrests or charges in the past 3 years"
-23," Conviction of misdemeanor charges with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, but with convictions of another kind within 7 years from disposition date"
-25, Conviction of felony charges that are not covered in section 19.2-392.12
-26," Conviction of misdemeanor charges covered under 19.2-392.6-A or 19.2-392.6-B, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of any other kind within 7 years from disposition date"
-28," Conviction of felony charges covered in section 19.2-392.12, and has not been convicted of any other felony within the past 10 years of the petition, with no class 3 or 4 felony conviction within the past 20 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
-29," Conviction of felony charges covered in section 19.2-392.12, but has been convicted of another felony within the past 10 years of the petition, with no class 3 or 4 felony conviction within the past 20 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
-30," Conviction of misdemeanor charges covered under 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of any other kind within 7 years from disposition date"
-31," Conviction of misdemeanor charges other than those covered under 19.2-392.6-A, 19.2-392.6-B, and 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of any other kind within 7 years from disposition date"
+5,Conviction with a prior class 3 or 4 felony conviction within the past 20 years
+9,Conviction and convicted of another felony within the past 10 years of the petition
+11,Deferred dismissal of misdemeanor charges
+12,Dismissal of felony charges
+15,"Conviction, previously convicted of a class 1 or 2 felony or any other felony punishable by imprisonment for life"
+17,"Dismissal of misdemeanor charges, but with arrests or charges in the past 3 years"
+19,"Deferred dismissal of felony charges that aren't excluded by 19.2-392.12, but with a class 3 or 4 felony conviction within the past 20 years"
+22,"Dismissal of misdemeanor charges, with no arrests or charges in the past 3 years, and with no convictions on the person's record"
+23,"Dismissal of misdemeanor charges, with no arrests or charges in the past 3 years, but with convictions on the person's record"
+25,"Deferred dismissal of felony charges that aren't excluded by 19.2-392.12, but with another felony within the past 10 years"
+28,"Conviction of misdemeanor charges, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, but with convictions of any other kind within 7 years from disposition date"
+31,"Deferred dismissal of felony charges, but with a prior class 1 or 2 felony or another felony punishable by imprisonment for life"
+32,"Conviction of misdemeanor charges covered in 19.2-392.6 A and B, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, and with no convictions of any other kind within 7 years from disposition date"
+34,Conviction of felony charges excluded under 19.2-392.12
+35,"Conviction of felony charges not excluded under 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
+36,Conviction of felony charges excluded under 19.2-392.12
+37,"Conviction of felony charges not excluded under 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
+38,Deferred dismissal of felony charges that are excluded by 19.2-392.12
+39,"Deferred dismissal of felony charges that aren't excluded by 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
+40,Conviction of misdemeanor charges excluded by 19.2-392.12 
+41,"Conviction of misdemeanor charges not covered in 19.2-392.6 A and B or excluded by 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, and with no convictions of any other kind within 7 years from disposition date"
