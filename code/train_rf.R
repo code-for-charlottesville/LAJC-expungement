@@ -6,7 +6,7 @@ chargetype <- c("Misdemeanor", "Felony") # No infraction
 disposition <- c("Conviction", "Dismissed", "Deferral Dismissal")
 codesection <- c("covered in 19.2-392.6 - A",
                  "covered in 19.2-392.6 - B",
-                 "covered in 19.2-392.12",
+                 "excluded by 19.2-392.12",
                  "covered elsewhere")
 sevenyear <- c(FALSE, TRUE)
 anyconvict <- c(FALSE, TRUE)
@@ -52,21 +52,15 @@ cases$expungability[S4] <- "Petition"
 S5 <- cases$chargetype == "Misdemeanor" &
   cases$disposition == "Conviction" &
   (cases$sevenyear | cases$class1_2 | cases$class3_4 | cases$anyfelony |
-     cases$codesection == "covered in 19.2-392.12")
+     cases$codesection == "excluded by 19.2-392.12")
 cases$expungability[S5] <- "Not eligible"
 
-cases$expungability[cases$chargetype == "Felony"] <- "Not eligible" # unless specified below
+cases$expungability[cases$chargetype == "Felony"] <- "Petition" # unless specified below
 
 S6 <- cases$chargetype == "Felony" &
-  cases$codesection == "covered in 19.2-392.12" & 
-  cases$disposition != "Conviction"
-cases$expungability[S6] <- "Petition"
-
-S7 <- cases$chargetype == "Felony" &
-  cases$codesection == "covered in 19.2-392.12" & 
-  cases$disposition == "Conviction" &
-  !cases$class1_2 & !cases$class3_4 & !cases$anyfelony
-cases$expungability[S7] <- "Petition"
+  cases$disposition != "Dismissed" &
+  (cases$codesection == "excluded by 19.2-392.12" | cases$class1_2 | cases$class3_4 | cases$anyfelony)
+cases$expungability[S6] <- "Not eligible"
 
 cases <- cases %>%
   mutate(expungability = as.factor(expungability),
@@ -78,11 +72,17 @@ expunge_coder <- randomForest(
   formula = expungability ~ .,
   data = cases,
   importance = TRUE,
-  mtry = 10,
+  mtry = 8,
   ntree = 1
 )
+
+### comment out ###
+pdf("~/Box Sync/Code for Cville/tree.pdf", width=60, height=8)
+reprtree:::plot.getTree(expunge_coder)
+dev.off()
+getTree(expunge_coder, labelVar = TRUE)
+###################
 
 table(cases$expungability, predict(expunge_coder))
 
 save(expunge_coder, file="expunge_coder.Rdata")
-

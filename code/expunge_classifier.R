@@ -26,7 +26,7 @@ classify_ex <- function(id){
   
   data <- read_person_file(id) %>%
     replace_na(list(CodeSection = "MISSING"))
-
+  
   load(here("data", "expunge_coder.Rdata"))
   
   orig_cols <- colnames(data)
@@ -81,7 +81,7 @@ classify_ex <- function(id){
                                                  # "Dismissed" = "Resolved", #??
                                                  "Conviction" = "Guilty In Absentia",
                                                  "Conviction" = "Guilty"
-                                                 )),
+           )),
            disposition = ifelse(Plea %in% c("Alford", "Guilty", "Nolo Contendere") & disposition == "Dismissed",
                                 "Deferral Dismissal", 
                                 disposition),
@@ -93,9 +93,9 @@ classify_ex <- function(id){
            chargetype = factor(chargetype, levels = c("Misdemeanor", "Felony")),
            disposition = factor(disposition, levels = c("Conviction", "Dismissed", "Deferral Dismissal")),
            codesection = factor(codesection, levels = c("covered in 19.2-392.6 - A",
-                                                           "covered in 19.2-392.6 - B",
-                                                           "covered in 19.2-392.12",
-                                                           "covered elsewhere")),
+                                                        "covered in 19.2-392.6 - B",
+                                                        "covered in 19.2-392.12",
+                                                        "covered elsewhere")),
            anyconvict = any(disposition == "Conviction"),
            class1_2 = any(Class %in% c("1", "2") & chargetype=="Felony"),
            class1_2 = ifelse(is.na(class1_2), FALSE, class1_2),
@@ -141,4 +141,3 @@ classify_ex <- function(id){
   data <- dplyr::select(data, all_of(orig_cols), expungable, reason, old_expungable)
   return(data)
 }
-
