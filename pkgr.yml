@@ -1,0 +1,23 @@
+
+Version: 1
+
+Packages:
+  - devtools
+  - renv
+  - tidyverse
+  - furrr
+  - future
+  - fs
+  - here
+  - filelock
+  - lubridate
+  - data.table
+  - glue
+  - randomForest
+  - bit64 # this was causing a weird bug with data.table I think
+  
+Repos:
+  - MPN: https://mpn.metworx.com/snapshots/stable/2021-04-15
+  - CRAN: https://cran.rstudio.com
+
+Library: /home/rstudio/R/x86_64-pc-linux-gnu-library/4.0/

@@ -1,3 +1,14 @@
+
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Rprofile
+
+*.lck
+logs/
+*.log
+
 ##################
 # Python Stuff
 ##################
@@ -244,3 +255,4 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+>>>>>>> 36f96b8fde478e63efa942725f827d50c3cc5584

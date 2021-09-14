@@ -9,299 +9,55 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 
 ```{r, message=F}
 # first you need to install these packages
-library(httr)
 library(tidyverse)
 library(data.table)
 library(fs)
+library(here)
+source(here("code", "helper-functions.R"))
 ```
 
-
-# The data
-
-We should put some brief intro about the data we're using, though I think they already know about it...
-
+# Full data
+Here are the high-level counts for _all years_ in the data.
 
 ```{r}
-criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
+all_df <- read_csv("~/expunge_counts.csv", col_types = "cnnnnn")
+sums <- summarise(all_df, across(2:6, sum, na.rm = TRUE))
+sums
 ```
 
-```{r}
-read_district_file <- function(.f) {
-  fread(
-  .f,
-  select = c(
-    "HearingDate",
-    "person_id",
-    "CodeSection",
-    "FinalDisposition",
-    "CaseType",
-    "Charge"
-  )
-) %>% 
-  rename(
-    DispositionCode = FinalDisposition,
-    ChargeType = CaseType
-  ) %>%
-  mutate(
-      CourtType = "district"
-    )
-}
+```{r, include = F}
+# it looks like we lost 300k cases somewhere in the new law counts
+# might need to look into that
+new_law_total <- sums$automatic + sums$petition + sums$not_eligible
+old_law_total <- sums$old_petition + sums$old_not_eligible
+print(old_law_total - new_law_total)
 
-read_circuit_file <- function(.f) {
-  fread(
-    .f,
-    select = c(
-      "HearingDate",
-      "person_id",
-      "CodeSection",
-      "DispositionCode",
-      "ChargeType",
-      "Charge"  
-    )
-  ) %>%
-    mutate(
-      CourtType = "circuit"
-    )
-}
-  
+View(filter(all_df, is.na(automatic)))
 ```
 
-
-# Filter to expungeable cases
-
-### Defining the cases we care about
-This is the most complicated section. Basically, I am defining a list of the "categories" of cases that we care about, as defined by the new law. Each "category" is stored as a query, which is a list with the following elements:
-
-* `reference` -- the section of the new law describing a specific category of case that is expungeable.
-* `title` -- a free text sample from that section of the new law, for explanatory purposes.
-* Any applicable filters. These elements each contain values that the specified field is allowed to take:
-  * `CodeSection` -- The codes for the alleged crime
-  * `DispositionCode` -- The relevant dispositions of the cases for the relevant crimes
-  * `ChargeType` -- The relevant charge type ("Felony", "Misdemeanor", etc.) if relevant
-  
-**Note: this may be a partial list.** We should probably go through the new law again with an LAJC lawyer to make sure we have coded this correctly.
-
-```{r pressure, echo=TRUE}
-QUERIES <- list(
-  list(
-    reference = "19.2-392.6.A",
-    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
-    CodeSection = c("4.1-305", "18.2-250.1"),
-    DispositionCode = c("Dismissed") 
-  ),
-  list(
-    reference = "19.2-392.6.B",
-    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
-    CodeSection = c("4.1-305", "18.2-96", "18.2-103", "18.2-119", "18.2-120", "18.2-134"),
-    DispositionCode = c("Guilty")
-  ),
-  list(
-    reference = "19.2-392.6.B-misdemeanor",
-    title = "Automatic sealing of offenses resulting in a deferred and dismissed disposition or conviction.",
-    CodeSection = c("18.2-248.1", "18.2-250.1", "18.2-415"),
-    DispositionCode = c("Guilty"),
-    ChargeType = c("Misdemeanor")
-  ),
-  list(
-    reference = "19.2-392.12",
-    title = "Sealing of offenses resulting in a deferred and dismissed disposition or conviction by petition.",  
-    CodeSection = c("18.2-36.1", "18.2-36.2", "18.2-51.4", "18.2-51.5", "18.2-57.2", "18.2-266", "46.2-341.24"),
-    DispositionCode = c("Deferred", "Dismissed")
-  )
-)
-```
-
-Under the old law, any cases with the following dispositions should be eligible for expungement.
-
-```{r, echo = TRUE}
-OLD_LAW <- c(
-      "Dismissed", 
-      "Dismissed/Other", 
-      "Nolle Prosequi", 
-      "Not Guilty/Acquitted", 
-      "Not Guilty By Reason Of Insanity", 
-      "Not True Bill", 
-      "Not Guilty", 
-      "Not Guilty/Insanity"
-    )
-
-```
-
-
-```{r}
-#' Filter the input data based on a query
-#' @param .d A tibble of the criminal court data
-#' @param .q A "query list" as defined in the section above.
-filter_on_query <- function(.d, .q) {
-  .d %>%
-    filter(
-      CodeSection %in% (.q$CodeSection %||% CodeSection),
-      DispositionCode %in% (.q$DispositionCode %||% DispositionCode),
-      ChargeType %in% (.q$ChargeType %||% ChargeType)
-    ) %>%
-    mutate(
-      reference = .q$reference,
-      title = .q$title
-    ) %>%
-    select(
-      reference,
-      title,
-      HearingDate,
-      person_id,
-      CodeSection,
-      DispositionCode,
-      ChargeType,
-      Charge
-    )
-}
-```
-
-Here we map over the queries to get only the relevant cases that fit _any_ of our queries. This is only the sample data. We pull in all of the data below.
-
-```{r}
-purrr::map_dfr(QUERIES, function(.query) {
-  filter_on_query(
-    read_district_file(str_subset(criminal_files, "district")[1]), 
-    .query
-  )
-}) %>%
-  select(
-    reference,
-    CodeSection,
-    DispositionCode,
-    ChargeType,
-    Charge
-  ) %>% 
-  slice_head(n = 10) %>%
-  knitr::kable()
-```
-
-
-### Conviction-free period
-
-**Very important note: we have not considered the 7-year conviction-free stipulation yet.** This is obviously very important, but was more difficult to query so we are planning to come back to it later. Just be sure to keep that in mind when considering the figures below.
-
-## The full data, summarized by year
-
-This is where we roll it up to what they are likely looking for: by year, how many cases are eligible for expungement and why? For the "and why?" part, we give them the reference section in the new law.
-
-```{r}
-years <- as.character(2009:2019)
-years_files <- unlist(map(years, ~str_subset(criminal_files, .x)))
-
-# writing out counts as we iterate in purrr
-write_lines("file,year,total,old_law,new_law", "counts.csv")
-message(paste("Iterating over", length(years_files), "for", length(years), "years..."))
-
-all_df <- purrr::map_dfr(years_files, function(.y) {
-  message(paste("Parsing", .y))
-  
-  if (str_detect(.y, "circuit")) {
-    this_df <- read_circuit_file(.y)
-  } else {
-    this_df <- read_district_file(.y)
-  }
-  
-  # get some counts to write out
-  total <- nrow(this_df)
-  old_law <- this_df %>%
-    filter(DispositionCode %in% OLD_LAW) %>%
-    nrow()
-  
-  # parse the year out of the file name
-  this_year <- .y %>% 
-    str_replace(".+criminal_", "") %>% 
-    str_replace("_anon.+$", "")
-  
-  # filter to only the rows that match one of our queries
-  new_law_df <- purrr::map_dfr(QUERIES, function(.query) {
-    filter_on_query(this_df, .query)
-  }) %>%
-    mutate(
-      year = this_year,
-      file = .y
-    )
-  
-  # write out the counts
-  write_lines(
-    paste(.y, this_year, total, old_law, nrow(new_law_df), sep=","),
-    "counts.csv",
-    append=TRUE
-  )
-  
-  return(new_law_df)
-})
-```
 
 ## Results for the New Law
 
-Total counts of _newly expungeable_ cases by year:
 ```{r}
-all_df %>%
-  count(year) %>%
-  mutate(n = format(n, big.mark = ",", scientific = FALSE)) %>%
-  rename(Count = n) %>%
-  knitr::kable()
-```
+.c <- names(sums)
+.l <- c(
+  "Automatic Exp.",
+  "Exp. w/ Petition",
+  "Not Eligible",
+  "Exp. w/ Petition",
+  "Not Eligible"
+)
 
-```{r}
-all_df %>%
-  count(year, reference) %>%
-  ggplot(aes(x = year, y = n, fill = reference)) +
-    geom_bar(stat = "identity") +
-    scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
-    ylab("Count of cases") +
-    ggtitle("Count of Expungeable Cases\n  by year and relevant section of new law")
-```
-
-```{r}
-all_df %>%
-  count(year, CodeSection) %>%
-  ggplot(aes(x = year, y = n, fill = CodeSection)) +
-    geom_bar(stat = "identity") +
-    scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
-    ylab("Count of cases") +
-    ggtitle("Count of Expungeable Cases\n  by year and criminal code")
-
-```
-
-
-## Percentage of total cases that are expungeable (under new law vs old law)
-
-This compares the number of additional cases that will be expungeable under the new law vs. the number of cases that were previously expungeable (_but should now be automatic?_).
-
-```{r}
-counts_df <- read_csv("counts.csv", col_types = cols()) %>%
-  group_by(year) %>%
-  summarize(
-    total = sum(total),
-    new_law = sum(new_law),
-    old_law = sum(old_law)
-  ) %>%
-  pivot_longer(
-    cols = ends_with("law"), 
-    names_to = "Eligibility", 
-    values_to = "raw_count"
-  ) %>%
+sums %>%
+  pivot_longer(automatic:old_not_eligible) %>%
   mutate(
-    Percent = scales::percent(raw_count/total, accuracy = 0.1),
-    Count = format(raw_count, big.mark = ",")
-  )
+    law = ifelse(str_detect(name, "old"), "Old Law", "New Law"),
+    name = factor(name, levels = .c, labels = .l),
+  ) %>%
+  ggplot(aes(x = name, y = value/1e6)) +
+    geom_bar(stat = "identity") + 
+    facet_wrap(~law) +
+    ylab("Count of Cases (in Millions)") + xlab("") +
+    ggtitle("Counts of Cases for entire data set (2005-2019)")
 
 ```
-
-```{r}
-ggplot(counts_df, aes(x = as.factor(year), y = raw_count, fill = Eligibility)) + 
-  geom_bar(stat = "identity") +
-  scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
-  xlab("Year") + ylab("Count of cases") +
-  ggtitle("Expungeable Cases by year\n  new law vs. old law")
-```
-
-The `Percent` column shows the percentage of total cases for that year that fall into each category.
-```{r}
-counts_df %>%
-  select(year, Eligibility, Count, Percent) %>%
-  knitr::kable(align = "r")
-```
-

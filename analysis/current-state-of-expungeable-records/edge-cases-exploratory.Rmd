@@ -1,0 +1,207 @@
+---
+title: "Current State of Expungeable Records - Exploring Edge Cases"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+```
+
+```{r, message=F}
+# first you need to install these packages
+library(tidyverse)
+library(data.table)
+library(fs)
+library(here)
+source(here("code", "helper-functions.R"))
+```
+
+There are some edge cases in the data that we want to examine to see just how common they are so we can decide what to do with them.
+
+```{r}
+criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
+print(paste("Processing", length(criminal_files), "files..."))
+
+res <- imap(criminal_files,  ~ {
+  if (.y %% 10 == 0) cat(paste("$", .y, "$"))
+  
+  .d <- suppressWarnings(read_court_file(.x))
+  
+  list(
+    DispositionCode = table(.d$DispositionCode),
+    ChargeType = table(.d$ChargeType),
+    Plea = table(.d$Plea),
+    CodeNA = sum(.d$CodeSection == "", na.rm = T) + sum(is.na(.d$CodeSection))
+  )
+})
+cat("\n")
+```
+
+# Uncommon and Missing Disposition Codes
+
+Looking at the counts of disposition codes across all files.
+
+```{r}
+res_dc <- res %>%
+  map_dfr(~.x[["DispositionCode"]]) %>% 
+  rename(MISSING = `...1`) %>%
+  mutate(
+    across(everything(), ~replace_na(.x, 0)),
+    file = criminal_files
+  ) %>%
+  select(file, everything()) 
+
+# saving out the raw data
+write_csv(res_dc, here("analysis/current-state-of-expungeable-records/data", "counts_DispositionCode.csv"))
+
+res_dc %>%
+  select(-file) %>%
+  summarise(across(everything(), sum)) %>%
+  pivot_longer(everything(), names_to = "DispositionCode", values_to = "Count") %>%
+  arrange(desc(Count)) %>%
+  mutate(Count = format(Count, big.mark = ",")) %>%
+  knitr::kable()
+```
+
+
+# Uncommon Charge Types
+
+Looking at the counts of charge type across all files.
+
+```{r}
+res_ct <- res %>%
+  map_dfr(~.x[["ChargeType"]]) %>% 
+  mutate(
+    across(everything(), ~replace_na(.x, 0)),
+    file = criminal_files
+  ) %>%
+  select(file, everything()) 
+
+# saving out the raw data
+write_csv(res_ct, here("analysis/current-state-of-expungeable-records/data", "counts_ChargeType.csv"))
+
+res_ct %>%
+  select(-file) %>%
+  summarise(across(everything(), sum)) %>%
+  pivot_longer(everything(), names_to = "ChargeType", values_to = "Count") %>%
+  arrange(desc(Count)) %>%
+  mutate(Count = format(Count, big.mark = ",")) %>%
+  knitr::kable()
+```
+
+# Uncommon Pleas
+
+Looking at the counts of hearing plea across all files.
+
+```{r}
+res_ct <- res %>%
+  map_dfr(~.x[["Plea"]]) %>% 
+  mutate(
+    across(everything(), ~replace_na(.x, 0)),
+    file = criminal_files
+  ) %>%
+  select(file, everything()) 
+
+# saving out the raw data
+write_csv(res_ct, here("analysis/current-state-of-expungeable-records/data", "counts_Plea.csv"))
+
+res_ct %>%
+  select(-file) %>%
+  summarise(across(everything(), sum)) %>%
+  pivot_longer(everything(), names_to = "Plea", values_to = "Count") %>%
+  arrange(desc(Count)) %>%
+  mutate(Count = format(Count, big.mark = ",")) %>%
+  knitr::kable()
+```
+
+
+# Missing Code Section
+
+```{r}
+res_cna <- res %>%
+  map_int(~.x[["CodeNA"]]) %>%
+  sum()
+
+print(paste(res_cna, "missing CodeSection in full data"))
+```
+
+# Examples of rare dispositions
+
+Looking for examples of these
+
+* Complied with Law
+* Resolved
+* Certified Misdemeanor
+* Granted
+* Denied
+
+```{r, eval=FALSE}
+# don't eval when knitting
+
+our_dispositions <- c(
+  "Complied With Law",
+  "Resolved",
+  "Certified Misdemeanor",
+  "Granted",
+  "Denied"
+)
+
+criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
+print(paste("Processing", length(criminal_files), "files..."))
+
+res <- imap_dfr(criminal_files,  ~ {
+  if (.y %% 10 == 0) cat(paste("$", .y, "$"))
+  
+  suppressWarnings(read_court_file(.x)) %>%
+    filter(DispositionCode %in% our_dispositions)
+})
+cat("\n")
+
+```
+
+```{r, eval=FALSE}
+# don't eval when knitting
+
+criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
+print(paste("Processing", length(criminal_files), "files..."))
+
+res <- imap_dfr(criminal_files,  ~ {
+  if (.y %% 10 == 0) cat(paste("$", .y, "$"))
+  
+  suppressWarnings(read_court_file(.x)) %>%
+    filter(DispositionCode == "Resolved")
+})
+cat("\n")
+
+```
+
+
+```{r}
+res$Locality %>% table() %>% sort(decreasing = T) %>% as.data.frame()
+```
+
+# Marijuana charges
+```{r, eval=FALSE}
+# don't eval when knitting
+
+criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
+print(paste("Processing", length(criminal_files), "files..."))
+
+res <- imap_dfr(criminal_files,  ~ {
+  if (.y %% 10 == 0) cat(paste("$", .y, "$"))
+  
+  suppressWarnings(read_court_file(.x)) %>%
+    filter(stringr::str_detect(CodeSection, "18.2-248.1"))
+})
+cat("\n")
+
+```
+
+```{r}
+res %>%
+mutate(year = format(HearingDate, "%Y")) %>%
+count(year) %>%
+View()
+```
+
+
