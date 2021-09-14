@@ -1,0 +1,49 @@
+---
+title: "Connecting to courts data"
+author: "Seth Green"
+date: "2/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+This is a template showing you how to begin analysis of the Virginia courts data for the [LAJC Expungement project](https://github.com/code-for-charlottesville/LAJC-expungement).
+
+```{r, message = F}
+# first you need to install these packages
+library(tidyverse)
+library(data.table)
+library(fs)
+```
+
+## This is the beginning of what the real data loading would look like
+
+First pull in the sample data
+
+```{r, eval = FALSE}
+DATA_DIR <- "/srv/court-data"
+
+sample_data <- read_csv(file.path(DATA_DIR, "district_criminal_2019_anon_07.csv"))
+head(sample_data)
+```
+
+Or pull in some subset of the real data. _Probably want something in here to check the size first so we don't blow up the RAM..._
+
+```{r, eval = FALSE}
+years <- "201[89]"
+courts <- "circuit_criminal"
+
+df <- fs::dir_ls(DATA_DIR) %>% # get all files in dir
+  str_subset(years) %>%      # filter to only the years you want
+  str_subset(courts) %>%     # filter to only the type of courts you want
+  map_dfr(fread)               # read in the files to a single tibble 
+
+dim(df)
+```
+
+
+
