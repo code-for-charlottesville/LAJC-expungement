@@ -34,8 +34,8 @@ classify_ex <- function(id){
         "Dismissed/Other"
       )
     )
-  
-  if(nrow(data) == 0) return(data)
+
+    if(nrow(data) == 0) return(data)
   
   ########## Generate objects to assist in feature construction ########
   
@@ -154,7 +154,7 @@ classify_ex <- function(id){
   # add old law expungable count
   data <- data %>% 
     mutate(old_expungable = (disposition == "Dismissed"))
-  
+
   # rationales
   tree <- getTree(expunge_coder, labelVar=TRUE) #tree
   nodes <- attr(predict(expunge_coder, newdata=data, nodes=TRUE), "nodes")
@@ -174,6 +174,7 @@ classify_ex <- function(id){
   
   data$expungable[data$sameday & data$expungable=="Automatic"] <- "Petition"
   data$expungable[data$sameday & data$expungable=="Automatic (pending)"] <- "Petition (pending)"
+  data$expungable_no_lifetimelimit <- data$expungable
   
   # Lifetime = {True; False} (more than 2 lifetime expungements)
   
@@ -189,11 +190,12 @@ classify_ex <- function(id){
   # Fix missing values for race and sex: replace with mode
   data$Race[is.na(data$Race)] <- names(which.max(table(data$Race)))[1]
   data$Sex[is.na(data$Sex)] <- names(which.max(table(data$Sex)))[1]
-  
+
   ########### Select columns to keep ###############
   data <- dplyr::select(data, person_id, HearingDate, CodeSection, codesection,
                         ChargeType, chargetype, Class, DispositionCode, disposition,
-                        Plea, Race, Sex, fips, convictions:old_expungable, reason,
+                        Plea, Race, Sex, fips, convictions:expungable, old_expungable, 
+                        expungable_no_lifetimelimit, reason,
                         sameday, lifetime)
   return(data)
 }
