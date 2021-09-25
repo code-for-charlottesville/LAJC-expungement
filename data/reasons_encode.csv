@@ -1,22 +1,32 @@
 node,reason
-5,Conviction with a prior class 3 or 4 felony conviction within the past 20 years
-9,Conviction and convicted of another felony within the past 10 years of the petition
-11,Deferred dismissal of misdemeanor charges
-12,Dismissal of felony charges
-15,"Conviction, previously convicted of a class 1 or 2 felony or any other felony punishable by imprisonment for life"
-17,"Dismissal of misdemeanor charges, but with arrests or charges in the past 3 years"
-19,"Deferred dismissal of felony charges that aren't excluded by 19.2-392.12, but with a class 3 or 4 felony conviction within the past 20 years"
-22,"Dismissal of misdemeanor charges, with no arrests or charges in the past 3 years, and with no convictions on the person's record"
-23,"Dismissal of misdemeanor charges, with no arrests or charges in the past 3 years, but with convictions on the person's record"
-25,"Deferred dismissal of felony charges that aren't excluded by 19.2-392.12, but with another felony within the past 10 years"
-28,"Conviction of misdemeanor charges, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, but with convictions of any other kind within 7 years from disposition date"
-31,"Deferred dismissal of felony charges, but with a prior class 1 or 2 felony or another felony punishable by imprisonment for life"
-32,"Conviction of misdemeanor charges covered in 19.2-392.6 A and B, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, and with no convictions of any other kind within 7 years from disposition date"
-34,Conviction of felony charges excluded under 19.2-392.12
-35,"Conviction of felony charges not excluded under 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
-36,Conviction of felony charges excluded under 19.2-392.12
-37,"Conviction of felony charges not excluded under 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
-38,Deferred dismissal of felony charges that are excluded by 19.2-392.12
-39,"Deferred dismissal of felony charges that aren't excluded by 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life"
-40,Conviction of misdemeanor charges excluded by 19.2-392.12 
-41,"Conviction of misdemeanor charges not covered in 19.2-392.6 A and B or excluded by 19.2-392.12, with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, and no class 1 or 2 felony or any other felony punishable by imprisonment for life, and with no convictions of any other kind within 7 years from disposition date"
+6,Dismissal of felony charges
+9,Conviction or deferred dismissal of misdemeanor charges that are excluded from expungement by 19.2-392.12
+13,"Conviction or deferred dismissal of felony charges, but with a prior conviction of a Class 1 or 2 felony or any other felony punishable by imprisonment for life"
+15,"Dismissal of misdemeanor charges, but with arrests or charges in the past 3 years"
+17,"Conviction of misdemeanor charges that are not excluded from expungement by 19.2-392.12, but with convictions of another kind within 7 years from disposition date"
+21,"Conviction or deferred dismissal of felony charges, but with convictions within 10 years from disposition date"
+22,Dismissal of misdemeanor charges with no arrests or charges in the past 3 years and no convictions on the person's record
+23,"Dismissal of misdemeanor charges with no arrests or charges in the past 3 years, but with prior convictions on the person's record"
+27,Deferred dismissal of misdemeanor charges covered under 19.2-392.6-A
+29,Deferred dismissal of misdemeanor charges not covered under 19.2-392.6-A
+31,"Conviction or deferred dismissal of felony charges, but with a class 3 or 4 felony conviction within the past 20 years"
+32,Conviction of misdemeanor charges listed in 19.2-392.6 B with no convictions within 7 years from disposition date
+33,"Conviction of misdemeanor charges listed in 19.2-392.6 B with no convictions since the disposition date. However, because the disposition date is within 7 years of the current date, the record is not yet eligible for expungement"
+35,"Conviction of misdemeanor charges not listed in 19.2-392.6 A or B and not ineligible for expungement under 19.2-392.12, but with felony convictions within the last 10 years"
+37,"Dismissal of misdemeanor charges, but with convictions on the person's record"
+39,"Dismissal of misdemeanor charges, but with arrests or charges in the past 3 years"
+41,"Conviction or deferred dismissal of felony charges, but with a felony conviction within the last 10 years"
+43,"Conviction of misdemeanor charges not listed in 19.2-392.6 A or B and not ineligible for expungement under 19.2-392.12, but with a prior conviction for a class 1 or 2 felony or another felony punishable by imprisonment for life"
+44,Dismissal of misdemeanor charges with no arrests or charges in the past 3 years and no convictions on the person's record
+45,"Dismissal of misdemeanor charges, but with arrests or charges in the past 3 years"
+51,"Conviction of misdemeanor charges not listed in 19.2-392.6 A or B and not ineligible for expungement under 19.2-392.12, but with a prior conviction for a class 3 or 4 felony within the past 20 years"
+52,Dismissal of misdemeanor charges with no arrests or charges in the past 3 years and no convictions on the person's record
+53,"Dismissal of misdemeanor charges with no arrests or charges in the past 3 years, but with convictions on the person's record"
+54,Dismissal of misdemeanor charges with no arrests or charges in the past 3 years and no convictions on the person's record
+55,"Dismissal of misdemeanor charges with no arrests or charges in the past 3 years, but with convictions on the person's record"
+56,Conviction or deferred dismissal of felony charges that are ineligible for expungement under 19.2-392.12
+57,"Conviction or deferred dismissal of felony charges that are not ones listed under 19.2-392.12, with no felonies within the last 10 years, no class 3 or 4 felony conviction within the past 20 years, no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of another kind within 10 years from disposition date"
+58,Conviction or deferred dismissal of felony charges that are ineligible for expungement under 19.2-392.12
+59,"Conviction or deferred dismissal of felony charges that are not ones listed under 19.2-392.12, with no felonies within the last 10 years, no class 3 or 4 felony conviction within the past 20 years, no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of another kind since disposition date. However, because the disposition date is within 10 years of the current date, the record is not yet eligible for expungement"
+60,"Conviction of misdemeanor charges not listed in 19.2-392.6 A or B and not ineligible for expungement under 19.2-392.12, with no felonies within the last 10 years, no class 3 or 4 felony conviction within the past 20 years, no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of another kind within 7 years from disposition date"
+61,"Conviction of misdemeanor charges not listed in 19.2-392.6 A or B and not ineligible for expungement under 19.2-392.12, with no felonies within the last 10 years, no class 3 or 4 felony conviction within the past 20 years, no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of another kind since the disposition date. However, because the disposition date is within 7 years of the current date, the record is not yet eligible for expungement"
