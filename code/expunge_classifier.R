@@ -188,9 +188,18 @@ classify_ex <- function(id){
   data$expungable[data$lifetime] <- "Not eligible"
   
   # Fix missing values for race and sex: replace with mode
-  data$Race[is.na(data$Race)] <- names(which.max(table(data$Race)))[1]
-  data$Sex[is.na(data$Sex)] <- names(which.max(table(data$Sex)))[1]
-
+  if (all(is.na(data$Race))) {
+    data <- mutate(data, Race = "MISSING")
+  } else {
+    data$Race[is.na(data$Race)] <- names(which.max(table(data$Race)))[1]  
+  }
+  
+  if (all(is.na(data$Sex))) {
+    data <- mutate(data, Sex = "MISSING")
+  } else {
+    data$Sex[is.na(data$Sex)] <- names(which.max(table(data$Sex)))[1]
+  }
+  
   ########### Select columns to keep ###############
   data <- dplyr::select(data, person_id, HearingDate, CodeSection, codesection,
                         ChargeType, chargetype, Class, DispositionCode, disposition,
