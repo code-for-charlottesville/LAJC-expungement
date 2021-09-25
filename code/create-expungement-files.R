@@ -5,7 +5,7 @@ library(here)
 source(here("code", "helper-functions.R"))
 source(here("code", "expunge_classifier.R"))
 
-plan(multisession(workers = availableCores() - 1))
+plan(multisession(workers = availableCores() / 2)) # use half the cores, trying not to have it die halfway...
 options('future.rng.onMisuse' = "ignore")
 
 LOG_FILE <- here("logs", "create-expungement-files4.log")
@@ -39,8 +39,8 @@ future_walk(person_dirs, function(.d) {
     
     # write out results, if any
     if (nrow(res) > 0) {
-      write_expungeable_counts(res, COUNTS_FILE)
-      write_expunge_person_file(res)
+      #write_expungeable_counts(res, COUNTS_FILE)
+      #write_expunge_person_file(res)
       write_expunge_person_file_BIG(res)
     }
   })

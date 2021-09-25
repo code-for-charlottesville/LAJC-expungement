@@ -5,7 +5,7 @@ library(here)
 source(here("code", "helper-functions.R"))
 source(here("code", "expunge_classifier.R"))
 
-LOG_FILE <- here("logs", "create-expungement-files3.log")
+LOG_FILE <- here("logs", "create-expungement-files4.log")
 person_dirs <- fs::dir_ls(PERSON_DATA_DIR)
 
 # check if everything was run
