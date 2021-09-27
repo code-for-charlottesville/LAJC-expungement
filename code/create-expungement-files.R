@@ -5,7 +5,7 @@ library(here)
 source(here("code", "helper-functions.R"))
 source(here("code", "expunge_classifier.R"))
 
-plan(multisession(workers = availableCores() / 2)) # use half the cores, trying not to have it die halfway...
+plan(multisession(workers = availableCores() - 1))
 options('future.rng.onMisuse' = "ignore")
 
 LOG_FILE <- here("logs", "create-expungement-files4.log")
