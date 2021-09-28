@@ -1,0 +1,106 @@
+---
+title: "Data Pipeline Overview - LAJC Criminal Records Expungement"
+output: html_document
+---
+
+# Introduction
+
+This serves as an overview of the main functions and scripts in the current data pipeline (as of September 2021). The high-level flow is as follows:
+
+* Raw data, in csv's by year =>
+* Person-level data =>
+  * `code/create-person-files.R`
+  * `write_person_file()` (from `code/helper-functions.R`)
+* Classify each case's expungeability =>
+  * `create-expungement-files.R`
+  * `classify_ex()` (from `code/expunge_classifier.R`)
+  * `expunge_coder.Rdata` (the model, trained in `code/train_rf.R`)
+* Load data, with classification and "reason", into database
+
+```{r message = FALSE}
+library(tidyverse)
+library(fs)
+source(here::here("code", "helper-functions.R"))
+```
+
+# Helper functions
+
+Much of the work is done by helper functions that we've written to make the data munging easier. These live in the `code/helper-functions.R` file. 
+
+Whenever we start changing our infrastructure to be something _other than_ just flat files on a server disk, the hope is that these helper functions provide nice isolation for the different parts of the pipeline, which make it easier to refactor. For example, the `read_person_file()` function you will see below could be refactored to hit a database table and subset it to only rows for a given person, and the rest of the classifier algorithm that calls it will hopefully work relatively unchanged.
+
+# The raw data
+
+The raw data is currently sitting in csv files on our Rstudio server.
+
+```{r}
+criminal_files <- fs::dir_ls("/home/rstudio/courtdata") %>% str_subset("criminal")
+paste("-- Found", length(criminal_files), "files to process...")
+```
+
+We have a helper function `read_court_file()` to read in a single file of raw data and select (and rename) only the columns that we're interested in. Here's a sample of the raw data:
+
+```{r}
+criminal_files[100] %>%
+  read_court_file() %>%
+  head(n = 10)
+```
+# Create person files
+
+The law determines whether something is expungeable by looking back over a person's entire criminal history. Thus, the classifier needs to easily be able to access that history. The facilitate this, we iterate over _all_ of the raw data and reorganize by person, writing all cases for each person into a single csv file, named with that person's id. 
+
+This is done by the `code/create-person-files.R` script. When all of the logging and error handling is stripped out, this script is essentially walking over all the files, then walking over all the rows in each file, and writing that row to the relevant person file.
+
+```{r, eval = FALSE}
+walk(criminal_files, function(.f) {
+    .d <- read_court_file(.f)
+    pwalk(.d, write_to_person_file)  
+})
+```
+
+**This entire step could likely be skipped** if we can get the raw data into a database that can easily:
+
+* Give us a list of all unique person id's
+* Give us a table of all rows with a given person id
+* Pass that table to `classify_ex()`
+
+# Create expungement files
+
+Once we have created all the person files, we iterate over them and feed each one to the classifier. This is done in `code/create-expungement-files.R`. Again, will logging etc. stripped out, doing the following:
+
+```{r, eval = FALSE}
+walk(person_files, function(.f) {
+  # classify all cases in a given person file
+  res <- classify_ex(.f)
+  
+  # write out results, if any
+  if (nrow(res) > 0) {
+    write_expunge_person_file_BIG(res)
+  }
+})
+```
+
+This writes the results out to one big file that is subsequently loaded into the database (currently manually) for querying.
+
+# Classifier
+
+The magic step that was glossed over there is in `classify_ex()`. This function lives in `code/expunge_classifier.R` and it is what takes in the person file and returns the things we care about: 
+
+* Whether each case is expungeable
+* The reasons why or why not
+
+## read_person_file()
+
+The first thing this function does is call the `read_person_file()` helper function. As noted above, this could be refactored to hit a database table and subset it to only rows for a given person, and (hopefully) the rest of the function will hopefully work relatively unchanged.
+
+## The algorithm
+
+The rest of this function is bunch of convoluted data munging which is essentially doing feature engineering. That is, it is looking over the person's criminal history and building up the features (mostly boolean columns like "have you been convicted of a felony in the past ten years?") that are necessary for the classifier. 
+
+This process appears quite complex, and it is, but only because the law that attempts to encode is indeed very complex.
+
+## The classifier
+
+The classifier that takes these features and returns both an expungeability classification and a "reason" for the classification.  This is trained in `code/train_rf.R` and saved out to `expunge_coder.Rdata`, which then loaded and used by `classify_ex()`.
+
+Sidenote: the "reason" is a plain English translation associated with each terminal node of the decision tree. These are joined against the classification near the bottom of `classify_ex()`.
