@@ -94,7 +94,7 @@ write_to_person_file <- function(...) {
   if (!fs::file_exists(person_file)) fs::file_create(person_file)
   
   # lock file so no other process can write to it at the same time
-  .l <- lock(paste0(person_file, ".lck"), timeout = 5000)
+  .l <- lock(paste0(person_file, ".lck"), timeout = 10000)
   on.exit(unlock(.l))
   if (is.null(.l)) {
     warning(paste("Could not access", person_file, "because of lockfile problems."))
@@ -170,10 +170,10 @@ write_expungeable_counts <- function(res, outfile) {
   )
   
   # lock file so no other process can write to it at the same time
-  .l <- lock(outfile, timeout = 5000)
+  .l <- lock(outfile, timeout = 10000)
   on.exit(unlock(.l))
   if (is.null(.l)) {
-    warning(paste("Could not access", person_file, "because of lockfile problems."))
+    warning(paste("Could not access", outfile, "because of lockfile problems."))
   }
   
   write_lines(out_string, outfile, append = TRUE)
@@ -203,3 +203,32 @@ write_expunge_person_file_BIG <- function(res) {
   write_csv(res, EXPUNGE_BIG_FILE, append = TRUE)
 }
 
+
+################
+# reading final expungement files
+#
+
+
+CLASSIFIED_COLS <- c(
+  "person_id", 
+  "HearingDate", 
+  "CodeSection", 
+  "ChargeType", 
+  "Class", 
+  "DispositionCode", 
+  "Plea", 
+  "Race", 
+  "Sex", 
+  "fips", 
+  "Locality", 
+  "expungable", 
+  "reason", 
+  "old_expungable"
+)
+
+#' Read in the final expungement file written out from create-expungement-files.R
+#' 
+#' The format of this is whatever is returned from classify_ex()
+read_expungement_file <- function(.f, .n = Inf) {
+  data.table::fread(.f, nrows = .n, header = FALSE, col.names = CLASSIFIED_COLS)
+}

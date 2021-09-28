@@ -39,8 +39,8 @@ future_walk(person_dirs, function(.d) {
     
     # write out results, if any
     if (nrow(res) > 0) {
-      write_expungeable_counts(res, COUNTS_FILE)
-      write_expunge_person_file(res)
+      #write_expungeable_counts(res, COUNTS_FILE)
+      #write_expunge_person_file(res)
       write_expunge_person_file_BIG(res)
     }
   })
