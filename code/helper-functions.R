@@ -209,22 +209,12 @@ write_expunge_person_file_BIG <- function(res) {
 #
 
 
-CLASSIFIED_COLS <- c(
-  "person_id", 
-  "HearingDate", 
-  "CodeSection", 
-  "ChargeType", 
-  "Class", 
-  "DispositionCode", 
-  "Plea", 
-  "Race", 
-  "Sex", 
-  "fips", 
-  "Locality", 
-  "expungable", 
-  "reason", 
-  "old_expungable"
-)
+CLASSIFIED_COLS <- c("person_id", "HearingDate", "CodeSection", "codesection", "ChargeType", 
+                     "chargetype", "Class", "DispositionCode", "disposition", "Plea", 
+                     "Race", "Sex", "fips", "convictions", "arrests", "felony10", 
+                     "sevenyear", "tenyear", "within7", "within10", "class1_2", "class3_4", 
+                     "expungable", "old_expungable", "expungable_no_lifetimelimit", 
+                     "reason", "sameday", "lifetime")
 
 #' Read in the final expungement file written out from create-expungement-files.R
 #' 
