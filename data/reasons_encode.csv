@@ -21,9 +21,9 @@ node,reason
 45,"Dismissal of misdemeanor charges, but with arrests or charges in the past 3 years"
 51,"Conviction of misdemeanor charges not listed in 19.2-392.6 A or B and not ineligible for expungement under 19.2-392.12, but with a prior conviction for a class 3 or 4 felony within the past 20 years"
 52,Dismissal of misdemeanor charges with no arrests or charges in the past 3 years and no convictions on the person's record
-53,"Dismissal of misdemeanor charges with no arrests or charges in the past 3 years, but with convictions on the person's record"
+53,"Dismissal of misdemeanor charges with no arrests or charges in the past 3 years, but with prior convictions on the person's record"
 54,Dismissal of misdemeanor charges with no arrests or charges in the past 3 years and no convictions on the person's record
-55,"Dismissal of misdemeanor charges with no arrests or charges in the past 3 years, but with convictions on the person's record"
+55,"Dismissal of misdemeanor charges with no arrests or charges in the past 3 years, but with prior convictions on the person's record"
 56,Conviction or deferred dismissal of felony charges that are ineligible for expungement under 19.2-392.12
 57,"Conviction or deferred dismissal of felony charges that are not ones listed under 19.2-392.12, with no felonies within the last 10 years, no class 3 or 4 felony conviction within the past 20 years, no class 1 or 2 felony or any other felony punishable by imprisonment for life, and no convictions of another kind within 10 years from disposition date"
 58,Conviction or deferred dismissal of felony charges that are ineligible for expungement under 19.2-392.12
