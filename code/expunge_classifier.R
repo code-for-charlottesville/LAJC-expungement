@@ -176,12 +176,13 @@ classify_ex <- function(id){
   data$expungable[data$sameday & data$expungable=="Automatic (pending)"] <- "Petition (pending)"
   data$expungable_no_lifetimelimit <- data$expungable
   
-  # Lifetime = {True; False} (more than 2 lifetime expungements)
+  # Lifetime = {True; False} (more than 2 lifetime expungements of convictions)
   
   data <- data %>%
     arrange(HearingDate) %>%
     mutate(totalexpunge = cumsum(expungable %in% c("Automatic", "Petition")),
            lifetime = totalexpunge > 2,
+           lifetime = lifetime & (disposition == "Conviction" | (disposition == "Deferral Dismissal" & sameday))
            reason2 = ifelse(lifetime & expungable != "Not eligible", "; HOWEVER, the outcome is changed to not eligible because the lifetime limit of two expungements has been exceeded","")) %>%
     unite(reason, reason, reason2, sep="")
   
