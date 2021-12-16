@@ -9,9 +9,17 @@
 logs/
 *.log
 
+.vscode/
+
 ##################
 # Python Stuff
 ##################
+
+# Pyenv
+.python-version
+
+# Dask
+dask-worker-space/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
