@@ -1,3 +1,4 @@
+# %%
 # Python Native Libraries
 import os
 
@@ -18,7 +19,21 @@ import numpy as np
 import dask.dataframe as dd
 from distributed import Client as DaskClient
 
+from classify.db import DATABASE_URI
+
+# %%
 
 
-if __name__ == '__main__':
+
+def engineer_features():
     client = DaskClient()
+    
+
+# %%
+
+
+# %%
+if __name__ == '__main__':
+    engineer_features()
+
+
