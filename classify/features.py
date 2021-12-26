@@ -81,6 +81,8 @@ def clean_data(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def build_disposition(ddf: dd.DataFrame) -> dd.DataFrame:
+    """Group disposition codes into relevant categories for classification. 
+    """
     ddf['disposition'] = ddf['DispositionCode'].replace({
         'Nolle Prosequi': 'Dismissed',
         'No Indictment Presented': 'Dismissed',
@@ -112,6 +114,8 @@ def build_chargetype(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def build_codesection(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+    """Categorize Virginia legal code section.
+    """
     def assign_code_section(row):
         if (
             row['CodeSection'] in config.covered_sections_a 
@@ -134,15 +138,107 @@ def build_codesection(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
         else:
             return 'covered elsewhere'
 
-    ddf['codesection'] = ddf.map_partitions(
-        lambda df: df.apply(assign_code_section, axis=1),
+    ddf['codesection'] = ddf.apply(
+        assign_code_section, 
+        axis=1,
         meta=pd.Series(dtype=str)
     )
-
+    return ddf
 
 
 def build_convictions(ddf: dd.DataFrame) -> dd.DataFrame:
+    
+    def has_conviction(df: pd.DataFrame) -> pd.Series:
+        conviction_map = (df['disposition']
+                .apply(lambda x: x=='Conviction')
+                .groupby('person_id')
+                .any())
+
+        return df.index.map(conviction_map)
+    
+    ddf['convictions'] = ddf.map_partitions(
+        has_conviction,
+        meta=pd.Series(dtype=bool)
+    )
+    return ddf
+
+
+def fix_shifted_date_colums(ddf: dd.DataFrame, columns: list) -> dd.DataFrame:
     ...
+
+
+def remove_unneeded_columns(ddf: dd.DataFrame) -> dd.DataFrame:
+    uneeded_columns = [
+        'date_if_conviction', 
+        'date_if_felony_conviction'
+    ]
+    return ddf.drop(uneeded_columns, axis=1)
+
+
+def build_time_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+
+    def get_last_hearing_date(df: pd.DataFrame) -> pd.Series:
+        return (
+            df.groupby('person_id')['HearingDate']
+              .shift(1)
+        )
+    ddf['last_hearing_date'] = ddf.map_partitions(
+        get_last_hearing_date,
+        meta=pd.Series(dtype='datetime64[ns]')
+    )
+
+    def get_conviction_dates(df: pd.DataFrame) -> pd.Series:
+        return np.where(
+            (df['disposition']=='Conviction'), 
+            df['HearingDate'],
+            np.datetime64('NaT')
+        )
+    ddf['date_if_conviction'] = ddf.map_partitions(
+        get_conviction_dates,
+        meta=pd.Series(dtype='datetime64[ns]')
+    )
+
+    def get_felony_conviction_dates(df: pd.DataFrame) -> pd.Series:
+        return np.where(
+            (df['chargetype']=='Felony'), 
+            df['date_if_conviction'],
+            np.datetime64('NaT')
+        )
+    ddf['date_if_felony_conviction'] = ddf.map_partitions(
+        get_felony_conviction_dates,
+        meta=pd.Series(dtype='datetime64[ns]')
+    )
+
+    def get_last_felony_conviction_date(df: pd.DataFrame) -> pd.Series:
+        return (
+            df['date_if_felony_conviction']
+              .groupby('person_id')
+              .shift(1)
+              .groupby('person_id')
+              .ffill()
+              .fillna(pd.NaT)
+        )
+    ddf['last_felony_conviction_date'] = ddf.map_partitions(
+        get_last_felony_conviction_date,
+        meta=pd.Series(dtype='datetime64[ns]')
+    )
+
+    def get_next_conviction_date(df: pd.DataFrame) -> pd.Series:
+        return (
+            df['date_if_conviction']
+                .groupby('person_id')
+                .shift(-1)
+                .groupby('person_id')
+                .bfill()
+                .fillna(pd.NaT)
+        )
+    ddf['next_conviction_date'] = ddf.map_partitions(
+        get_next_conviction_date,
+        meta=pd.Series(dtype='datetime64[ns]')
+    )
+    ddf = remove_unneeded_columns(ddf)
+
+    return ddf
 
 
 def build_features(ddf: dd.DataFrame) -> dd.DataFrame:
