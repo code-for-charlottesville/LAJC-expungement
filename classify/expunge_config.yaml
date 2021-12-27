@@ -25,6 +25,8 @@ years_passed_disqualifier_short: 7
 years_passed_disqualifier_long: 10
 years_since_arrest_disqualifier: 3
 years_since_felony_disqualifier: 10
+years_until_next_conviction_short: 7
+years_until_next_conviction_long: 10
 
 lifetime_rule: true
 sameday_rule: true

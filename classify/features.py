@@ -15,16 +15,22 @@ from classify.config import ExpungeConfig
 logger = logging.getLogger(__name__)
 
 
-def fetch_expunge_data(n_partitions: Union[int,None] = None) -> dd.DataFrame:
+def fetch_expunge_data(
+    n_partitions: Union[int,None] = None,
+    custom_query: Union[sa.sql.Select,None] = None
+) -> dd.DataFrame:
     """Fetches expungement records and loads them into a Dask DataFrame. 
 
     Args:
         n_partitions: The number of underlying Pandas DataFrames to partition
             the table into (partitioned by 'person_id'). If None, we allow 
             Dask to choose automatically. 
+        custom_query: A custom SQLAlchemy query object that will be used to
+            query data. If not passed, Dask will fetch all data from 
+            the expunge_model table, sorted by person_id and HearingDate. 
     """
 
-    query = (
+    query = custom_query if custom_query is not None else (
         sa.sql.select(expunge_model)
             .order_by(
                 expunge_model.c.person_id,
@@ -279,7 +285,7 @@ def build_date_features(ddf: dd.DataFrame) -> dd.DataFrame:
         return ddf.map_partitions(func, meta=meta)
 
     column_builder_map = {
-        'last_hearing_data': get_last_hearing_date,
+        'last_hearing_date': get_last_hearing_date,
         'date_if_conviction': get_conviction_dates,
         'date_if_felony_conviction': get_felony_conviction_dates,
         'last_felony_conviction_date': get_last_felony_conviction_date,
@@ -298,9 +304,18 @@ def build_timedelta_features(
     ddf: dd.DataFrame, 
     config: ExpungeConfig
 ) -> dd.DataFrame:
-    ddf['days_since_last_hearing'] = ddf['HearingDate'] - ddf['last_hearing_date']
-    ddf['days_until_next_conviction'] = ddf['next_conviction_date'] - ddf['HearingDate']
-    ddf['days_since_last_felony_conviction'] = ddf['HearingDate'] - ddf['last_felony_conviction_date']
+    ddf['last_hearing_delta'] = ddf['HearingDate'] - ddf['last_hearing_date']
+    ddf['last_felony_conviction_delta'] = ddf['HearingDate'] - ddf['last_felony_conviction_date']
+    ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['HearingDate']
+    # NOTE: May want to switch this to runtime timestamp
+    ddf['from_present_delta'] = np.datetime64('2020-12-31') - ddf['HearingDate']
+
+    ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < config.years_since_arrest_disqualifier
+    ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < config.years_since_felony_disqualifier
+    ddf['next_conviction_disqualifier_short'] = ddf['next_conviction_delta'] < config.years_until_next_conviction_short
+    ddf['next_conviction_disqualifier_long'] = ddf['next_conviction_delta'] < config.years_until_next_conviction_long
+    ddf['from_present_disqualifier_short'] = ddf['from_present_delta'] < config.years_passed_disqualifier_short
+    ddf['from_present_disqualifier_long'] = ddf['from_present_delta'] < config.years_passed_disqualifier_long
 
     return ddf
 
@@ -309,7 +324,7 @@ def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     return (
         ddf.pipe(build_disposition)
            .pipe(build_chargetype)
-           .pipe(build_codesection)
+           .pipe(build_codesection, config)
            .pipe(build_convictions)
            .pipe(build_date_features)
            .pipe(build_timedelta_features, config)
