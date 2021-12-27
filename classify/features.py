@@ -320,6 +320,42 @@ def build_timedelta_features(
     return ddf
 
 
+def has_any_per_person_id(df: pd.DataFrame, column: str) -> pd.Series:
+    return (
+        df[column]
+          .groupby('person_id')
+          .any()
+    )
+
+
+def build_class_features(ddf: dd.DataFrame) -> dd.DataFrame:
+    felony_conviction_mask = (
+        (ddf['chargetype']=='Felony')
+        & (ddf['disposition']=='Conviction')
+    )
+    ddf['is_class_1_or_2'] = (
+        felony_conviction_mask
+        & (ddf['Class'].isin(['1', '2']))
+    )
+    ddf['is_class_3_or_4'] = (
+        felony_conviction_mask
+        & (ddf['Class'].isin(['3', '4']))
+    )
+
+    ddf['class1_2'] = ddf.map_partitions(
+        has_any_per_person_id,
+        column='is_class_1_or_2',
+        meta=pd.Series(dtype=bool)
+    )
+    ddf['class3_4'] = ddf.map_partitions(
+        has_any_per_person_id,
+        column='is_class_3_or_4',
+        meta=pd.Series(dtype=bool)
+    )
+
+    return ddf
+
+
 def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     return (
         ddf.pipe(build_disposition)
@@ -328,6 +364,7 @@ def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
            .pipe(build_convictions)
            .pipe(build_date_features)
            .pipe(build_timedelta_features, config)
+           .pipe(build_class_features)
     )
 
 
