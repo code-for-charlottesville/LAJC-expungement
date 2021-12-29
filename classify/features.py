@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Union
+from typing import Union, List
 
 import sqlalchemy as sa
 import pandas as pd
@@ -308,7 +308,7 @@ def build_timedelta_features(
     ddf['last_felony_conviction_delta'] = ddf['HearingDate'] - ddf['last_felony_conviction_date']
     ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['HearingDate']
     # NOTE: May want to switch this to runtime timestamp
-    ddf['from_present_delta'] = np.datetime64('2020-12-31') - ddf['HearingDate']
+    ddf['from_present_delta'] = -(ddf['HearingDate'] - np.datetime64('2020-12-31'))
 
     ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < config.years_since_arrest_disqualifier
     ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < config.years_since_felony_disqualifier
@@ -320,7 +320,7 @@ def build_timedelta_features(
     return ddf
 
 
-def has_any_per_person_id(df: pd.DataFrame, column: str) -> pd.Series:
+def any_true_per_person_id(df: pd.DataFrame, column: str) -> pd.Series:
     return (
         df[column]
           .groupby('person_id')
@@ -342,21 +342,23 @@ def build_class_features(ddf: dd.DataFrame) -> dd.DataFrame:
         & (ddf['Class'].isin(['3', '4']))
     )
 
+    return_meta = pd.Series(dtype=bool)
     ddf['class1_2'] = ddf.map_partitions(
-        has_any_per_person_id,
+        any_true_per_person_id,
         column='is_class_1_or_2',
-        meta=pd.Series(dtype=bool)
+        meta=return_meta
     )
     ddf['class3_4'] = ddf.map_partitions(
-        has_any_per_person_id,
+        any_true_per_person_id,
         column='is_class_3_or_4',
-        meta=pd.Series(dtype=bool)
+        meta=return_meta
     )
 
     return ddf
 
 
 def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+    logger.info("Building Dask task graph for feature construction")
     return (
         ddf.pipe(build_disposition)
            .pipe(build_chargetype)
@@ -368,6 +370,23 @@ def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     )
 
 
+def write_to_csv(ddf: dd.DataFrame) -> List[str]:
+    target_dir = '/tmp/expunge_data'
+    target_glob = f"{target_dir}/expunge_features-*.csv"
+    logger.info(f"Expungement feature data will be written to: {target_dir}")
+
+    logger.info("Clearing any data from previous runs")
+    shell_command = f"rm -rf {target_glob}"
+    exit_val = os.system(f'rm -rf {target_glob}')
+    logger.info(f"Command '{shell_command}' returned with exit value: {exit_val}")
+
+    logger.info("Executing Dask task graph and writing results to CSV...")
+    file_paths = ddf.to_csv(target_glob)
+    logger.info("Files written successfully")
+
+    return file_paths
+
+
 def run_featurization(config: ExpungeConfig, n_partitions: int = None):
     logger.info("Initializing Dask distributed client")
     DaskClient()
@@ -376,6 +395,7 @@ def run_featurization(config: ExpungeConfig, n_partitions: int = None):
     ddf = clean_data(ddf)
 
     ddf = build_features(ddf, config)
+    file_paths = write_to_csv(ddf)
 
 
 if __name__ == '__main__':
