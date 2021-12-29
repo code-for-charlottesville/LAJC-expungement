@@ -3,20 +3,22 @@ import os
 import sqlalchemy as sa
 
 
-_USER = 'jupyter'
-_PASSWORD = os.environ['POSTGRES_PASS']
-_HOST = 'localhost'
-_PORT = '5432'
-_DB = 'expunge'
+USER = 'jupyter'
+PASSWORD = os.environ['POSTGRES_PASS']
+HOST = 'localhost'
+PORT = '5432'
+DB = 'expunge'
 
-DATABASE_URI = f"postgresql://{_USER}:{_PASSWORD}@{_HOST}:{_PORT}/{_DB}"
+DATABASE_URI = f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}"
 
 
-_EXPUNGE_TABLE = 'expunge_clean' # Full Dataset
-# _EXPUNGE_TABLE = 'expunge_10k_clean' # ~26K records
-# _EXPUNGE_TABLE = 'expunge_1k_clean' # ~2.6K records
+EXPUNGE_TABLE = 'expunge_clean' # Full Dataset
+# EXPUNGE_TABLE = 'expunge_10k_clean' # ~26K records
+# EXPUNGE_TABLE = 'expunge_1k_clean' # ~2.6K records
 
-expunge_model = sa.Table(_EXPUNGE_TABLE, sa.MetaData(),
+
+
+expunge_model = sa.Table(EXPUNGE_TABLE, sa.MetaData(),
     sa.Column('person_id', sa.Integer),
     sa.Column('HearingDate', sa.DateTime),
     sa.Column('CodeSection', sa.String),
