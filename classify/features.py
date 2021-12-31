@@ -1,6 +1,7 @@
 import os
 import logging
-from typing import Union, List
+from typing import Union, List, Tuple
+from uuid import uuid4
 
 import sqlalchemy as sa
 import pandas as pd
@@ -8,7 +9,12 @@ import numpy as np
 import dask.dataframe as dd
 from distributed import Client as DaskClient
 
-from classify.db import DATABASE_URI, expunge_model
+from classify.db import (
+    DATABASE_URI, 
+    expunge, 
+    expunge_features,
+    get_psycopg2_conn
+)
 from classify.config import ExpungeConfig
 
 
@@ -29,16 +35,16 @@ def fetch_expunge_data(
             query data. If not passed, Dask will fetch all data from 
             the expunge_model table, sorted by person_id and HearingDate. 
     """
-
     query = custom_query if custom_query is not None else (
-        sa.sql.select(expunge_model)
+        sa.select(expunge)
             .order_by(
-                expunge_model.c.person_id,
-                expunge_model.c.HearingDate
+                expunge.c.person_id,
+                expunge.c.HearingDate
             )
     )
 
     dask_types = {
+        # 'record_id': 'int64',
         'HearingDate': 'datetime64[ns]',
         'CodeSection': str,
         'ChargeType': str,
@@ -53,8 +59,10 @@ def fetch_expunge_data(
 
     kwargs = {'npartitions': n_partitions} if n_partitions else {}
 
-    logger.info(f"Reading from table: {expunge_model.name}")
-    logger.info(f"Loading into {n_partitions} partitions")
+    logger.info(f"Reading from table: {expunge.name}")
+    if n_partitions:
+        logger.info(f"Loading into {n_partitions} partitions")
+
     return dd.read_sql_table(
         table=query,
         index_col='person_id',
@@ -245,8 +253,7 @@ def fix_shifted_sameday_dates(
 
 
 def fix_shifted_date_columns(ddf: dd.DataFrame) -> dd.DataFrame:
-    """Standardizes differing date aggregations within one person_id. 
-    """
+    """Standardizes differing date aggregations within one person_id."""
     backward_facing_cols = [
         'last_hearing_date',
         'last_felony_conviction_date',
@@ -272,14 +279,6 @@ def fix_shifted_date_columns(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf
 
 
-def remove_unneeded_columns(ddf: dd.DataFrame) -> dd.DataFrame:
-    uneeded_columns = [
-        'date_if_conviction', 
-        'date_if_felony_conviction'
-    ]
-    return ddf.drop(uneeded_columns, axis=1)
-
-
 def build_date_features(ddf: dd.DataFrame) -> dd.DataFrame:
     def build_date_feature(func, meta=pd.Series(dtype='datetime64[ns]')):
         return ddf.map_partitions(func, meta=meta)
@@ -294,9 +293,16 @@ def build_date_features(ddf: dd.DataFrame) -> dd.DataFrame:
     for col, func in column_builder_map.items():
         ddf[col] = build_date_feature(func)
 
-    ddf = remove_unneeded_columns(ddf)
     ddf = fix_shifted_date_columns(ddf)
 
+    return ddf
+
+
+def convert_timedeltas_to_days(ddf: dd.DataFrame) -> dd.DataFrame:
+    """Convert timedelta columns to days to allow loading to DB as integers."""
+    timedelta_cols = [col for col in ddf.columns if col.endswith('_delta')]
+    for col in timedelta_cols:
+        ddf[col] = ddf[col].dt.days
     return ddf
 
 
@@ -316,6 +322,8 @@ def build_timedelta_features(
     ddf['next_conviction_disqualifier_long'] = ddf['next_conviction_delta'] < config.years_until_next_conviction_long
     ddf['from_present_disqualifier_short'] = ddf['from_present_delta'] < config.years_passed_disqualifier_short
     ddf['from_present_disqualifier_long'] = ddf['from_present_delta'] < config.years_passed_disqualifier_long
+
+    ddf = convert_timedeltas_to_days(ddf)
 
     return ddf
 
@@ -370,6 +378,22 @@ def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     )
 
 
+def remove_unneeded_columns(ddf: dd.DataFrame) -> dd.DataFrame:
+    uneeded_columns = [
+        'date_if_conviction', 
+        'date_if_felony_conviction',
+        'is_class_1_or_2',
+        'is_class_3_or_4'
+    ]
+    return ddf.drop(uneeded_columns, axis=1)
+
+
+def append_run_id(ddf: dd.DataFrame) -> Tuple[dd.DataFrame, str]:
+    run_id = str(uuid4())
+    ddf['run_id'] = run_id
+    return ddf, run_id
+
+
 def write_to_csv(ddf: dd.DataFrame) -> List[str]:
     target_dir = '/tmp/expunge_data'
     target_glob = f"{target_dir}/expunge_features-*.csv"
@@ -382,9 +406,27 @@ def write_to_csv(ddf: dd.DataFrame) -> List[str]:
 
     logger.info("Executing Dask task graph and writing results to CSV...")
     file_paths = ddf.to_csv(target_glob)
-    logger.info("Files written successfully")
+    logger.info("File(s) written successfully")
 
     return file_paths
+
+
+def load_to_db(file_paths: List[str]):
+    logger.info("Opening connection to PostGres via Psycopg")
+    conn = get_psycopg2_conn()
+
+    with conn:
+        with conn.cursor() as cursor:
+            for path in file_paths:
+                logger.info(f"Loading from file: {path}")
+                with open(path, 'r') as file:
+                    cursor.copy_expert(f"""
+                        COPY {expunge_features.name}
+                        FROM STDIN
+                        WITH CSV HEADER
+                    """, file)
+
+    logger.info(f"Load to DB complete")
 
 
 def run_featurization(config: ExpungeConfig, n_partitions: int = None):
@@ -395,7 +437,17 @@ def run_featurization(config: ExpungeConfig, n_partitions: int = None):
     ddf = clean_data(ddf)
 
     ddf = build_features(ddf, config)
+    ddf = remove_unneeded_columns(ddf)
+    ddf, run_id = append_run_id(ddf)
+
     file_paths = write_to_csv(ddf)
+    load_to_db(file_paths)
+
+    logger.info(f"Expungement classification feature creation complete!")
+    logger.info(f"Run ID: {run_id}")
+
+    logger.info(f"Query results with: ")
+    logger.info(f"SELECT * FROM {expunge_features.name} WHERE run_id = '{run_id}'")
 
 
 if __name__ == '__main__':
