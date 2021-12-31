@@ -453,8 +453,8 @@ def run_featurization(config: ExpungeConfig, n_partitions: int = None):
 if __name__ == '__main__':
     logging.basicConfig(
         level=logging.INFO,
-        format='[%(levelname)s - %(name)s.py]: %(message)s'
+        format='[%(levelname)s - %(module)s.py]: %(message)s'
     )
 
     config = ExpungeConfig.from_yaml('classify/expunge_config.yaml')
-    run_featurization(config)
+    run_featurization(config, n_partitions=32)
