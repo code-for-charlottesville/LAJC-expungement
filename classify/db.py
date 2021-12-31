@@ -8,8 +8,11 @@ from sqlalchemy import (
     Integer,
     Date,
     BigInteger,
+    Boolean,
+    Float,
     create_engine
 )
+import psycopg2
 
 
 USER = 'jupyter'
@@ -27,7 +30,7 @@ EXPUNGE_TABLE = 'expunge_clean' # Full Dataset
 # EXPUNGE_TABLE = 'expunge_1k_clean' # ~2.6K records
 
 expunge = Table(EXPUNGE_TABLE, meta,
-    Column('record_id', BigInteger, primary_key=True),
+    # Column('record_id', BigInteger, primary_key=True),
 
     Column('person_id', BigInteger),
     Column('HearingDate', Date),
@@ -42,7 +45,7 @@ expunge = Table(EXPUNGE_TABLE, meta,
 )
 
 expunge_features = Table('expunge_features', meta,
-    Column('record_id', BigInteger, primary_key=True),
+    # Column('record_id', BigInteger, primary_key=True),
 
     Column('person_id', BigInteger),
     Column('HearingDate', Date),
@@ -58,26 +61,39 @@ expunge_features = Table('expunge_features', meta,
     Column('disposition', Text),
     Column('chargetype', Text),
     Column('codesection', Text),
-    Column('convictions', Integer),
+    Column('convictions', Boolean),
 
     Column('last_hearing_date', Date),
     Column('last_felony_conviction_date', Date),
     Column('next_conviction_date', Date),
 
-    Column('last_hearing_delta', Integer),
-    Column('last_felony_conviction_delta', Integer),
-    Column('next_conviction_delta', Integer),
-    Column('from_present_delta', Integer),
+    Column('last_hearing_delta', Float),
+    Column('last_felony_conviction_delta', Float),
+    Column('next_conviction_delta', Float),
+    Column('from_present_delta', Float),
 
-    Column('arrest_disqualifier', Integer),
-    Column('felony_conviction_disqualifier', Integer),
-    Column('next_conviction_disqualifier_short', Integer),
-    Column('next_conviction_disqualifier_long', Integer),
-    Column('from_present_disqualifier_short', Integer),
-    Column('from_present_disqualifier_long', Integer),
-    Column('class1_2', Integer),
-    Column('class3_4', Integer),
+    Column('arrest_disqualifier', Boolean),
+    Column('felony_conviction_disqualifier', Boolean),
+    Column('next_conviction_disqualifier_short', Boolean),
+    Column('next_conviction_disqualifier_long', Boolean),
+    Column('from_present_disqualifier_short', Boolean),
+    Column('from_present_disqualifier_long', Boolean),
+    Column('class1_2', Boolean),
+    Column('class3_4', Boolean),
+
+    Column('run_id', Text)
 )
+
+
+def get_psycopg2_conn():
+    return psycopg2.connect(
+        user=USER,
+        password=PASSWORD,
+        host=HOST,
+        port=PORT,
+        dbname=DB
+    )
+
 
 if __name__ == '__main__':
     engine = create_engine(DATABASE_URI, echo=True)
