@@ -29,7 +29,12 @@ EXPUNGE_TABLE = 'expunge_clean' # Full Dataset
 # EXPUNGE_TABLE = 'expunge_10k_clean' # ~26K records
 # EXPUNGE_TABLE = 'expunge_1k_clean' # ~2.6K records
 
+FEATURE_TABLE = 'expunge_features'
+
 expunge = Table(EXPUNGE_TABLE, meta,
+    # TODO: Add a unique record ID to the expungement data. 
+    # This will likely be helpful in QC and comparisons. 
+
     # Column('record_id', BigInteger, primary_key=True),
 
     Column('person_id', BigInteger),
@@ -44,7 +49,7 @@ expunge = Table(EXPUNGE_TABLE, meta,
     Column('fips', Integer),
 )
 
-expunge_features = Table('expunge_features', meta,
+expunge_features = Table(FEATURE_TABLE, meta,
     # Column('record_id', BigInteger, primary_key=True),
 
     Column('person_id', BigInteger),
