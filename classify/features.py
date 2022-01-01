@@ -248,6 +248,15 @@ def fix_shifted_sameday_dates(
     fix_column: str, 
     is_backward_facing: bool = True
 ) -> pd.Series:
+    """Ensure dates features are consistent within one person_id and HearingDate
+    
+    Args:
+        df: Single Dask DataFrame partition.
+        fix_column: The date feature column to fix.
+        is_backward_facing: True if the date feature concerns past records, such
+            as most recent previous hearing, etc. False if feature concerns more
+            recent records.
+    """
     grouped_dates = df.groupby(['person_id','HearingDate'])[fix_column]
     idx = 0 if is_backward_facing else -1
     return grouped_dates.transform('nth', idx)
@@ -311,6 +320,7 @@ def build_timedelta_features(
     ddf: dd.DataFrame, 
     config: ExpungeConfig
 ) -> dd.DataFrame:
+    """Builds features for time differences between records or from present."""
     ddf['last_hearing_delta'] = ddf['HearingDate'] - ddf['last_hearing_date']
     ddf['last_felony_conviction_delta'] = ddf['HearingDate'] - ddf['last_felony_conviction_date']
     ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['HearingDate']
@@ -330,6 +340,11 @@ def build_timedelta_features(
 
 
 def any_true_per_person_id(df: pd.DataFrame, column: str) -> pd.Series:
+    """Determines whether any value of a column is true across a person_id
+    
+    Example usage: If a person_id has 4 records, did even 1 of them result
+        in a conviction? Then mark all as 'True', otherwise 'False'. 
+    """
     return (
         df[column]
           .groupby('person_id')
@@ -338,6 +353,7 @@ def any_true_per_person_id(df: pd.DataFrame, column: str) -> pd.Series:
 
 
 def build_class_features(ddf: dd.DataFrame) -> dd.DataFrame:
+    """Builds features related to Class 1-4 felony convictions"""
     felony_conviction_mask = (
         (ddf['chargetype']=='Felony')
         & (ddf['disposition']=='Conviction')
@@ -390,6 +406,7 @@ def remove_unneeded_columns(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def append_run_id(ddf: dd.DataFrame) -> Tuple[dd.DataFrame, str]:
+    """Adds unique ID for querying results of classification pipeline runs"""
     run_id = str(uuid4())
     ddf['run_id'] = run_id
     return ddf, run_id
