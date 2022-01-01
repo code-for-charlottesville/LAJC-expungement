@@ -248,13 +248,8 @@ def fix_shifted_sameday_dates(
     is_backward_facing: bool = True
 ) -> pd.Series:
     grouped_dates = df.groupby(['person_id','HearingDate'])[fix_column]
-
-    if is_backward_facing:
-        transformation = lambda df: df.min(skipna=False)
-    else:
-        transformation = lambda df: df.max(skipna=False)
-        
-    return grouped_dates.transform(transformation)
+    idx = 0 if is_backward_facing else -1
+    return grouped_dates.transform('nth', idx)
 
 
 def fix_shifted_date_columns(ddf: dd.DataFrame) -> dd.DataFrame:
