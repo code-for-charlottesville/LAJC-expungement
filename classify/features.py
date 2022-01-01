@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_expunge_data(
-    n_partitions: Union[int,None] = None,
-    custom_query: Union[sa.sql.Select,None] = None
+    n_partitions: Union[int, None] = None,
+    custom_query: Union[sa.sql.Select, None] = None
 ) -> dd.DataFrame:
     """Fetches expungement records and loads them into a Dask DataFrame. 
 
