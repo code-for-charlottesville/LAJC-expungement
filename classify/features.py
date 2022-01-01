@@ -2,6 +2,7 @@ import os
 import logging
 from typing import Union, List, Tuple
 from uuid import uuid4
+import argparse
 
 import sqlalchemy as sa
 import pandas as pd
@@ -453,11 +454,23 @@ def run_featurization(config: ExpungeConfig, n_partitions: int = None):
 if __name__ == '__main__':
     logging.basicConfig(
         level=logging.INFO,
-        format='[%(levelname)s - %(module)s.py]: %(message)s'
+        format='%(asctime)s [%(levelname)s - %(module)s.py]: %(message)s',
+        datefmt='%H:%M:%S'
     )
+
+    parser = argparse.ArgumentParser(
+        description='Build expungement classification features'
+    )
+    parser.add_argument(
+        '-p', '--partitions',
+        type=int,
+        help='Number of partitions (Pandas DFs) to split data into',
+        default=None
+    )
+    args = parser.parse_args()
 
     config = ExpungeConfig.from_yaml('classify/expunge_config.yaml')
     run_featurization(
         config, 
-        n_partitions=32
+        n_partitions=args.partitions
     )
