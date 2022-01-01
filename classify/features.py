@@ -37,6 +37,11 @@ def fetch_expunge_data(
     """
     query = custom_query if custom_query is not None else (
         sa.select(expunge)
+            .where(
+                # Pandas datetime cannot handle dates > '2262-04-11',
+                # due to them being stored in nanoseconds as 64-bit ints. 
+                expunge.c.HearingDate < '2262-04-11'
+            )
             .order_by(
                 expunge.c.person_id,
                 expunge.c.HearingDate
@@ -457,4 +462,7 @@ if __name__ == '__main__':
     )
 
     config = ExpungeConfig.from_yaml('classify/expunge_config.yaml')
-    run_featurization(config, n_partitions=32)
+    run_featurization(
+        config, 
+        n_partitions=32
+    )
