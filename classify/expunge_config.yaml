@@ -1,0 +1,32 @@
+covered_sections_a:
+  - 4.1-305
+  - 18.2-250.1
+covered_sections_b:
+  - 4.1-305
+  - 18.2-96
+  - 18.2-103
+  - 18.2-119
+  - 18.2-120
+  - 18.2-134
+  - 18.2-250.1
+  - 18.2-415
+covered_sections_b_misdemeanor:
+  - 18.2-248.1
+excluded_sections_twelve:
+  - 18.2-36.1
+  - 18.2-36.2
+  - 18.2-51.4
+  - 18.2-51.5
+  - 18.2-57.2
+  - 18.2-266
+  - 46.2-341.24
+
+years_passed_disqualifier_short: 7
+years_passed_disqualifier_long: 10
+years_since_arrest_disqualifier: 3
+years_since_felony_disqualifier: 10
+years_until_next_conviction_short: 7
+years_until_next_conviction_long: 10
+
+lifetime_rule: true
+sameday_rule: true
