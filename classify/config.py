@@ -11,17 +11,21 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ExpungeConfig:
+    run_id: str
+
+    cutoff_date: str
+
     covered_sections_a: List[str]
     covered_sections_b: List[str]
     covered_sections_b_misdemeanor: List[str]
     excluded_sections_twelve: List[str]
 
-    years_passed_disqualifier_short: np.timedelta64
-    years_passed_disqualifier_long: np.timedelta64
-    years_since_arrest_disqualifier: np.timedelta64
-    years_since_felony_disqualifier: np.timedelta64
-    years_until_next_conviction_short: np.timedelta64
-    years_until_next_conviction_long: np.timedelta64
+    years_since_arrest: np.timedelta64
+    years_since_felony: np.timedelta64
+    years_until_conviction_after_misdemeanor: np.timedelta64
+    years_until_conviction_after_felony: np.timedelta64
+    years_pending_after_misdemeanor: np.timedelta64
+    years_pending_after_felony: np.timedelta64
 
     lifetime_rule: bool
     sameday_rule: bool
@@ -30,12 +34,12 @@ class ExpungeConfig:
     def cast_timedeltas(attrs: dict) -> dict:
         """Convert integer configs to timedeltas (years)"""
         timedelta_vars = [
-            'years_passed_disqualifier_short',
-            'years_passed_disqualifier_long',
-            'years_since_arrest_disqualifier',
-            'years_since_felony_disqualifier',
-            'years_until_next_conviction_short',
-            'years_until_next_conviction_long'
+            'years_since_arrest',
+            'years_since_felony',
+            'years_until_conviction_after_misdemeanor',
+            'years_until_conviction_after_felony',
+            'years_pending_after_misdemeanor',
+            'years_pending_after_felony'
         ]
         for var in timedelta_vars:
             attrs[var] = np.timedelta64(attrs[var], 'Y')

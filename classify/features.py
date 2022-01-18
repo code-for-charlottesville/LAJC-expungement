@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Union, List, Tuple
+from typing import Union, List
 from uuid import uuid4
 import argparse
 
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_expunge_data(
+    config: ExpungeConfig,
     n_partitions: Union[int, None] = None,
     custom_query: Union[sa.sql.Select, None] = None
 ) -> dd.DataFrame:
@@ -39,9 +40,8 @@ def fetch_expunge_data(
     query = custom_query if custom_query is not None else (
         sa.select(expunge)
             .where(
-                # Pandas datetime cannot handle dates > '2262-04-11',
-                # due to them being stored in nanoseconds as 64-bit ints. 
-                expunge.c.HearingDate < '2262-04-11'
+                # Filter out any records with future hearing dates
+                expunge.c.HearingDate < config.cutoff_date
             )
             .order_by(
                 expunge.c.person_id,
@@ -324,15 +324,14 @@ def build_timedelta_features(
     ddf['last_hearing_delta'] = ddf['HearingDate'] - ddf['last_hearing_date']
     ddf['last_felony_conviction_delta'] = ddf['HearingDate'] - ddf['last_felony_conviction_date']
     ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['HearingDate']
-    # NOTE: May want to switch this to runtime timestamp
-    ddf['from_present_delta'] = -(ddf['HearingDate'] - np.datetime64('2020-12-31'))
+    ddf['from_present_delta'] = -(ddf['HearingDate'] - np.datetime64(config.cutoff_date))
 
-    ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < config.years_since_arrest_disqualifier
-    ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < config.years_since_felony_disqualifier
-    ddf['next_conviction_disqualifier_short'] = ddf['next_conviction_delta'] < config.years_until_next_conviction_short
-    ddf['next_conviction_disqualifier_long'] = ddf['next_conviction_delta'] < config.years_until_next_conviction_long
-    ddf['from_present_disqualifier_short'] = ddf['from_present_delta'] < config.years_passed_disqualifier_short
-    ddf['from_present_disqualifier_long'] = ddf['from_present_delta'] < config.years_passed_disqualifier_long
+    ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < config.years_since_arrest
+    ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < config.years_since_felony
+    ddf['next_conviction_disqualifier_after_misdemeanor'] = ddf['next_conviction_delta'] < config.years_until_conviction_after_misdemeanor
+    ddf['next_conviction_disqualifier_after_felony'] = ddf['next_conviction_delta'] < config.years_until_conviction_after_felony
+    ddf['pending_after_misdemeanor'] = ddf['from_present_delta'] < config.years_pending_after_misdemeanor
+    ddf['pending_after_felony'] = ddf['from_present_delta'] < config.years_pending_after_felony
 
     ddf = convert_timedeltas_to_days(ddf)
 
@@ -405,11 +404,11 @@ def remove_unneeded_columns(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf.drop(uneeded_columns, axis=1)
 
 
-def append_run_id(ddf: dd.DataFrame) -> Tuple[dd.DataFrame, str]:
+def append_run_id(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     """Adds unique ID for querying results of classification pipeline runs"""
-    run_id = str(uuid4())
+    run_id = str(uuid4()) if config.run_id == 'randomize' else config.run_id
     ddf['run_id'] = run_id
-    return ddf, run_id
+    return ddf
 
 
 def write_to_csv(ddf: dd.DataFrame) -> List[str]:
@@ -429,12 +428,17 @@ def write_to_csv(ddf: dd.DataFrame) -> List[str]:
     return file_paths
 
 
-def load_to_db(file_paths: List[str]):
+def load_to_db(file_paths: List[str], config: ExpungeConfig):
     logger.info("Opening connection to PostGres via Psycopg")
     conn = get_psycopg2_conn()
 
     with conn:
         with conn.cursor() as cursor:
+            logger.info(f"Deleting any records with run_id: {config.run_id}")
+            cursor.execute(f"""
+                DELETE FROM {expunge_features.name}
+                WHERE run_id = '{config.run_id}'
+            """)
             for path in file_paths:
                 logger.info(f"Loading from file: {path}")
                 with open(path, 'r') as file:
@@ -447,25 +451,32 @@ def load_to_db(file_paths: List[str]):
     logger.info(f"Load to DB complete")
 
 
-def run_featurization(config: ExpungeConfig, n_partitions: int = None):
+def run_featurization(config: ExpungeConfig, n_partitions: int = None) -> str:
+    logger.info(f"Featurization Run ID: {config.run_id}")
+    
     logger.info("Initializing Dask distributed client")
     DaskClient()
     
-    ddf = fetch_expunge_data(n_partitions)
+    ddf = fetch_expunge_data(config, n_partitions)
     ddf = clean_data(ddf)
 
     ddf = build_features(ddf, config)
     ddf = remove_unneeded_columns(ddf)
-    ddf, run_id = append_run_id(ddf)
+    ddf = append_run_id(ddf, config)
 
     file_paths = write_to_csv(ddf)
-    load_to_db(file_paths)
+    load_to_db(file_paths, config)
 
     logger.info(f"Expungement classification feature creation complete!")
-    logger.info(f"Run ID: {run_id}")
+    logger.info(f"""
+        Query results with: 
 
-    logger.info(f"Query results with: ")
-    logger.info(f"SELECT * FROM {expunge_features.name} WHERE run_id = '{run_id}'")
+        SELECT * 
+        FROM {expunge_features.name} 
+        WHERE run_id = '{config.run_id}'
+    """)
+
+    return config.run_id
 
 
 if __name__ == '__main__':
