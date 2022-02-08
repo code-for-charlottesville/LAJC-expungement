@@ -1,6 +1,16 @@
 Project expungement {
   database_type: 'PostgreSQL'
-  Note: 'Data for VA expungement project'
+
+  Note: '''
+    # Virginia Court Data DB
+
+    These docs are for the PostGreSQL DB supporting
+    the Virginia Court Data Expungement Project. 
+
+    [GitHub Repo](https://github.com/code-for-charlottesville/LAJC-expungement)
+
+    [Project Page](https://www.codeforcville.org/lajc-expungement)
+  '''
 }
 
 Table "expunge_clean" {
@@ -54,4 +64,6 @@ Table "expunge_features" {
 Table "expunge_eligibility" {
   "charge_id" integer [ref: > expunge_clean.charge_id]
   "run_id" text [Note: 'Identifier for a single classification run']
+  
+  Note: 'Expungement eligibility classification results by `run_id`'
 }
