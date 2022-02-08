@@ -1,0 +1,57 @@
+Project expungement {
+  database_type: 'PostgreSQL'
+  Note: 'Data for VA expungement project'
+}
+
+Table "expunge_clean" {
+  "charge_id" integer [pk, unique, increment, Note: 'Unique identifier for one charge for a single individual']
+  "person_id" bigint [Note: 'Identifier for a single individual']
+  "HearingDate" date [Note: 'Court hearing date for criminal charge']
+  "CodeSection" text [Note: 'Relevant section of VA criminal code for the charge']
+  "ChargeType" text [Note: 'Category of charge type (felony, etc)']
+  "Class" text [Note: 'Class of charge severity']
+  "DispositionCode" text [Note: 'Court\'s final determination on a charge']
+  "Plea" text [Note: 'Defendant\'s plea for charge']
+  "Race" text [Note: 'Race of the charged individual']
+  "Sex" text [Note: 'Sex of the charged individual']
+  "fips" integer [Note: 'FIPS code for the location of the court']
+
+  Note: '''
+    Virginia courts criminal charge data, with one
+    row per charge. 
+  '''
+}
+
+Table "expunge_features" {
+  "charge_id" integer [ref: > expunge_clean.charge_id]
+  "run_id" text [Note: 'Identifier for a single classification run']
+  "disposition" text
+  "chargetype" text
+  "codesection" text
+  "convictions" boolean
+  "last_hearing_date" date
+  "last_felony_conviction_date" date
+  "next_conviction_date" date
+  "last_hearing_delta" numeric
+  "last_felony_conviction_delta" numeric
+  "next_conviction_delta" numeric
+  "from_present_delta" numeric
+  "arrest_disqualifier" boolean
+  "felony_conviction_disqualifier" boolean
+  "next_conviction_disqualifier_after_misdemeanor" boolean
+  "next_conviction_disqualifier_after_felony" boolean
+  "pending_after_misdemeanor" boolean
+  "pending_after_felony" boolean
+  "class1_2" boolean
+  "class3_4" boolean
+
+  Note: '''
+    Necessary features for the expungement eligibility
+    classification of criminal records. 
+  '''
+}
+
+Table "expunge_eligibility" {
+  "charge_id" integer [ref: > expunge_clean.charge_id]
+  "run_id" text [Note: 'Identifier for a single classification run']
+}
