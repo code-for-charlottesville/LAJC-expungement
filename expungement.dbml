@@ -64,6 +64,9 @@ Table "expunge_features" {
 Table "expunge_eligibility" {
   "charge_id" integer [ref: > expunge_clean.charge_id]
   "run_id" text [Note: 'Identifier for a single classification run']
+  "expungibility" text [Note: 'Eligibility for expungement']
   
   Note: 'Expungement eligibility classification results by `run_id`'
 }
+
+Ref: expunge_eligibility.(charge_id, run_id) - expunge_features.(charge_id, run_id)
