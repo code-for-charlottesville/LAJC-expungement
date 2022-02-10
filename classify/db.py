@@ -25,8 +25,8 @@ DATABASE_URI = f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}"
 
 meta = MetaData()
 
-EXPUNGE_TABLE = 'expunge_clean' # Full Dataset
-# EXPUNGE_TABLE = 'expunge_10k_clean' # ~26K records
+# EXPUNGE_TABLE = 'expunge_clean' # Full Dataset
+EXPUNGE_TABLE = 'expunge_10k_clean' # ~26K records
 # EXPUNGE_TABLE = 'expunge_1k_clean' # ~2.6K records
 
 FEATURE_TABLE = 'expunge_features'
