@@ -3,7 +3,7 @@
 # Multiple runs with the same identifier will REPLACE previous
 # results with matching run_id. 
 # Passing 'randomize' will generate a random run_id (UUID). 
-run_id: 'default-10k'
+run_id: 'full_table_no_lifetime'
 
 # Date to use as the "current date" for expungement classification. 
 # Records after this cutoff will be filtered out, and this date will
@@ -53,7 +53,7 @@ years_pending_after_misdemeanor: 7
 years_pending_after_felony: 10
 
 # If true, a single person cannot have more than 2 lifetime expungements
-lifetime_rule: true
+lifetime_rule: false
 
 # If true, if a person has an offense that would be automatically expungeable
 # that is on same day as an offense of theirs that is NOT automatically
