@@ -2,6 +2,7 @@ import logging
 from typing import Tuple
 from functools import lru_cache
 
+import numpy as np
 import pandas as pd
 from sklearn import tree
 from sklearn.preprocessing import OneHotEncoder
@@ -112,11 +113,11 @@ def classify_in_parallel(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFra
     if config.lifetime_rule:
         ddf = apply_lifetime_rule(ddf)
     else:
-        ddf['lifetime_disqualifier'] = None
+        ddf['lifetime_disqualifier'] = np.NaN
 
     if config.sameday_rule:
         ddf = apply_sameday_rule(ddf)
     else:
-        ddf['sameday_disqualifier'] = None
+        ddf['sameday_disqualifier'] = np.NaN
     
     return ddf
