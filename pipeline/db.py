@@ -28,7 +28,6 @@ meta = MetaData()
 EXPUNGE_TABLE = 'expunge_clean' # Full Dataset
 # EXPUNGE_TABLE = 'expunge_10k_clean' # ~26K records
 # EXPUNGE_TABLE = 'expunge_1k_clean' # ~2.6K records
-# EXPUNGE_TABLE = 'fips_subset_20220211'
 
 FEATURE_TABLE = 'expunge_features'
 
@@ -87,7 +86,8 @@ expunge_features = Table(FEATURE_TABLE, meta,
     Column('class1_2', Boolean),
     Column('class3_4', Boolean),
 
-    Column('run_id', Text)
+    Column('run_id', Text),
+    Column('expungability', Text)
 )
 
 
