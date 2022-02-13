@@ -1,14 +1,10 @@
-import os
 import logging
-from typing import Union, List
 from uuid import uuid4
 import argparse
 
-import sqlalchemy as sa
 import pandas as pd
 import numpy as np
 import dask.dataframe as dd
-from distributed import Client as DaskClient
 
 from pipeline.config import ExpungeConfig
 
@@ -319,19 +315,6 @@ def build_class_features(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf
 
 
-def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
-    logger.info("Building Dask task graph for feature construction")
-    return (
-        ddf.pipe(build_disposition)
-           .pipe(build_chargetype)
-           .pipe(build_codesection, config)
-           .pipe(build_convictions)
-           .pipe(build_date_features)
-           .pipe(build_timedelta_features, config)
-           .pipe(build_class_features)
-    )
-
-
 def remove_unneeded_columns(ddf: dd.DataFrame) -> dd.DataFrame:
     uneeded_columns = [
         'date_if_conviction', 
@@ -349,54 +332,18 @@ def append_run_id(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     return ddf
 
 
-def run_featurization(config: ExpungeConfig, n_partitions: int = None) -> str:
-    logger.info(f"Featurization Run ID: {config.run_id}")
-    
-    logger.info("Initializing Dask distributed client")
-    DaskClient()
-    
-    ddf = fetch_expunge_data(config, n_partitions)
-    ddf = clean_data(ddf)
+def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+    logger.info("Building Dask task graph for feature construction")
+    return (
+        ddf.pipe(build_disposition)
+           .pipe(build_chargetype)
+           .pipe(build_codesection, config)
+           .pipe(build_convictions)
 
-    ddf = build_features(ddf, config)
-    ddf = remove_unneeded_columns(ddf)
-    ddf = append_run_id(ddf, config)
-
-    file_paths = write_to_csv(ddf)
-    load_to_db(file_paths, config)
-
-    logger.info(f"Expungement classification feature creation complete!")
-    logger.info(f"""
-        Query results with: 
-
-        SELECT * 
-        FROM {expunge_features.name} 
-        WHERE run_id = '{config.run_id}'
-    """)
-
-    return config.run_id
-
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s [%(levelname)s - %(module)s.py]: %(message)s',
-        datefmt='%H:%M:%S'
-    )
-
-    parser = argparse.ArgumentParser(
-        description='Build expungement classification features'
-    )
-    parser.add_argument(
-        '-p', '--partitions',
-        type=int,
-        help='Number of partitions (Pandas DFs) to split data into',
-        default=None
-    )
-    args = parser.parse_args()
-
-    config = ExpungeConfig.from_yaml('classify/expunge_config.yaml')
-    run_featurization(
-        config, 
-        n_partitions=args.partitions
+           .pipe(build_date_features)
+           .pipe(build_timedelta_features, config)
+           .pipe(build_class_features)
+           
+           .pipe(remove_unneeded_columns)
+           .pipe(append_run_id, config)
     )

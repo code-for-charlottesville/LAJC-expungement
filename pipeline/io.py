@@ -1,7 +1,10 @@
 import logging
-from typing import List
+from typing import Union, List
+import os
 
+import sqlalchemy as sa
 import dask.dataframe as dd
+import pandas as pd
 
 from pipeline.config import ExpungeConfig
 from pipeline.db import (
@@ -81,6 +84,9 @@ def write_to_csv(ddf: dd.DataFrame) -> List[str]:
     exit_val = os.system(f'rm -rf {target_glob}')
     logger.info(f"Command '{shell_command}' returned with exit value: {exit_val}")
 
+    # Reorder columns to match DB table
+    ddf = ddf[[col for col in expunge_features.columns.keys() if col != 'person_id']]
+
     logger.info("Executing Dask task graph and writing results to CSV...")
     file_paths = ddf.to_csv(target_glob)
     logger.info("File(s) written successfully")
@@ -109,4 +115,3 @@ def load_to_db(file_paths: List[str], config: ExpungeConfig):
                     """, file)
 
     logger.info(f"Load to DB complete")
-
