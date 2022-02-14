@@ -86,7 +86,11 @@ expunge_features = Table(FEATURE_TABLE, meta,
     Column('class1_2', Boolean),
     Column('class3_4', Boolean),
 
-    Column('run_id', Text)
+    Column('lifetime_disqualifier', Boolean),
+    Column('sameday_disqualifier', Boolean),
+
+    Column('run_id', Text),
+    Column('expungability', Text)
 )
 
 

@@ -3,7 +3,7 @@
 # Multiple runs with the same identifier will REPLACE previous
 # results with matching run_id. 
 # Passing 'randomize' will generate a random run_id (UUID). 
-run_id: 'feature_testing2'
+run_id: 'full_table_default'
 
 # Date to use as the "current date" for expungement classification. 
 # Records after this cutoff will be filtered out, and this date will
