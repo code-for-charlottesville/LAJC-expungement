@@ -110,14 +110,14 @@ def classify_in_parallel(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFra
         meta=pd.Series(dtype=str)
     )
 
-    if config.lifetime_rule:
-        ddf = apply_lifetime_rule(ddf)
-    else:
-        ddf['lifetime_disqualifier'] = np.NaN
-
     if config.sameday_rule:
         ddf = apply_sameday_rule(ddf)
     else:
         ddf['sameday_disqualifier'] = np.NaN
+        
+    if config.lifetime_rule:
+        ddf = apply_lifetime_rule(ddf)
+    else:
+        ddf['lifetime_disqualifier'] = np.NaN
     
     return ddf
