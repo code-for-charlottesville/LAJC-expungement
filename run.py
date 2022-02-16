@@ -59,7 +59,7 @@ if __name__ == '__main__':
         '-c', '--config',
         type=str,
         help='Path to expungement configuration file',
-        default='pipeline/expunge_config.yaml'
+        default='configs/default.yaml'
     )
     args = parser.parse_args()
 
