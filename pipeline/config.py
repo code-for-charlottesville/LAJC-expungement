@@ -24,8 +24,6 @@ class ExpungeConfig:
     years_since_felony: np.timedelta64
     years_until_conviction_after_misdemeanor: np.timedelta64
     years_until_conviction_after_felony: np.timedelta64
-    years_pending_after_misdemeanor: np.timedelta64
-    years_pending_after_felony: np.timedelta64
 
     lifetime_rule: bool
     sameday_rule: bool
@@ -38,8 +36,6 @@ class ExpungeConfig:
             'years_since_felony',
             'years_until_conviction_after_misdemeanor',
             'years_until_conviction_after_felony',
-            'years_pending_after_misdemeanor',
-            'years_pending_after_felony'
         ]
         for var in timedelta_vars:
             attrs[var] = np.timedelta64(attrs[var], 'Y')
