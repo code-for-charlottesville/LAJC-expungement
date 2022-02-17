@@ -264,8 +264,8 @@ def build_timedelta_features(
     ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < config.years_since_felony
     ddf['next_conviction_disqualifier_after_misdemeanor'] = ddf['next_conviction_delta'] < config.years_until_conviction_after_misdemeanor
     ddf['next_conviction_disqualifier_after_felony'] = ddf['next_conviction_delta'] < config.years_until_conviction_after_felony
-    ddf['pending_after_misdemeanor'] = ddf['from_present_delta'] < config.years_pending_after_misdemeanor
-    ddf['pending_after_felony'] = ddf['from_present_delta'] < config.years_pending_after_felony
+    ddf['pending_after_misdemeanor'] = ddf['from_present_delta'] < config.years_until_conviction_after_misdemeanor
+    ddf['pending_after_felony'] = ddf['from_present_delta'] < config.years_until_conviction_after_felony
 
     ddf = convert_timedeltas_to_days(ddf)
 

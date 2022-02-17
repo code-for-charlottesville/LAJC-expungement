@@ -41,16 +41,11 @@ years_since_arrest: 3
 years_since_felony: 10
 
 # Time gap that must exist between record and person's next conviction 
-# to make a record eligible for expungement
+# to make a record eligible for expungement. If the charge occurred within
+# X number of years of the present (either number below, depending), then 
+# the charge will be pending expungability until enough time has passed.  
 years_until_conviction_after_misdemeanor: 7
 years_until_conviction_after_felony: 10
-
-# Time that a record is pending for expungement until fully eligible, 
-# depending on type of offense. 
-# Example: a felony record is pending if it is within X years of the 
-# above 'cutoff_date'
-years_pending_after_misdemeanor: 7
-years_pending_after_felony: 10
 
 # If true, a single person cannot have more than 2 lifetime expungements
 lifetime_rule: true
