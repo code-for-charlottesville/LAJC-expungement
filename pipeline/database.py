@@ -2,20 +2,39 @@ import logging
 from typing import Union, List
 import os
 
+import psycopg2
 import sqlalchemy as sa
 import dask.dataframe as dd
 import pandas as pd
 
 from pipeline.config import ExpungeConfig
-from pipeline.db import (
-    DATABASE_URI, 
-    expunge, 
-    expunge_features,
-    get_psycopg2_conn
-)
+from pipeline.models import Charges, Features, Base
 
 
 logger = logging.getLogger(__name__)
+
+USER = 'jupyter'
+PASSWORD = os.environ['POSTGRES_PASS']
+HOST = 'localhost'
+PORT = '5432'
+DB = 'expunge'
+
+DATABASE_URI = f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}"
+
+# Dask only accepts queries built on SQLAlchemy Table objects,
+# which are being extracted from declarative models here. 
+charges: sa.Table = Charges.__table__
+features: sa.Table = Features.__table__
+
+
+def get_psycopg2_conn():
+    return psycopg2.connect(
+        user=USER,
+        password=PASSWORD,
+        host=HOST,
+        port=PORT,
+        dbname=DB
+    )
 
 
 def fetch_expunge_data(
@@ -23,7 +42,7 @@ def fetch_expunge_data(
     n_partitions: Union[int, None] = None,
     custom_query: Union[sa.sql.Select, None] = None
 ) -> dd.DataFrame:
-    """Fetches expungement records and loads them into a Dask DataFrame. 
+    """Fetches criminal records and loads them into a Dask DataFrame. 
 
     Args:
         n_partitions: The number of underlying Pandas DataFrames to partition
@@ -31,17 +50,17 @@ def fetch_expunge_data(
             Dask to choose automatically. 
         custom_query: A custom SQLAlchemy query object that will be used to
             query data. If not passed, Dask will fetch all data from 
-            the expunge_model table, sorted by person_id and HearingDate. 
+            the charges table, sorted by person_id and HearingDate. 
     """
     query = custom_query if custom_query is not None else (
-        sa.select(expunge)
+        sa.select(charges)
             .where(
                 # Filter out any records with future hearing dates
-                expunge.c.HearingDate < config.cutoff_date
+                charges.c.HearingDate < config.cutoff_date
             )
             .order_by(
-                expunge.c.person_id,
-                expunge.c.HearingDate
+                charges.c.person_id,
+                charges.c.HearingDate
             )
     )
 
@@ -61,7 +80,7 @@ def fetch_expunge_data(
 
     kwargs = {'npartitions': n_partitions} if n_partitions else {}
 
-    logger.info(f"Reading from table: {expunge.name}")
+    logger.info(f"Reading from table: {charges.name}")
     if n_partitions:
         logger.info(f"Loading into {n_partitions} partitions")
 
@@ -85,7 +104,7 @@ def write_to_csv(ddf: dd.DataFrame) -> List[str]:
     logger.info(f"Command '{shell_command}' returned with exit value: {exit_val}")
 
     # Reorder columns to match DB table
-    ddf = ddf[[col for col in expunge_features.columns.keys() if col != 'person_id']]
+    ddf = ddf[[col for col in features.columns.keys() if col != 'person_id']]
 
     logger.info("Executing Dask task graph and writing results to CSV...")
     file_paths = ddf.to_csv(target_glob)
@@ -102,16 +121,23 @@ def load_to_db(file_paths: List[str], config: ExpungeConfig):
         with conn.cursor() as cursor:
             logger.info(f"Deleting any records with run_id: {config.run_id}")
             cursor.execute(f"""
-                DELETE FROM {expunge_features.name}
+                DELETE FROM {features.name}
                 WHERE run_id = '{config.run_id}'
             """)
             for path in file_paths:
                 logger.info(f"Loading from file: {path}")
                 with open(path, 'r') as file:
                     cursor.copy_expert(f"""
-                        COPY {expunge_features.name}
+                        COPY {features.name}
                         FROM STDIN
                         WITH CSV HEADER
                     """, file)
 
     logger.info(f"Load to DB complete")
+
+
+# Running this script directly builds the database
+# tables in PostGres
+if __name__ == '__main__':
+    engine = sa.create_engine(DATABASE_URI, echo=True)
+    Base.metadata.create_all(engine)

@@ -4,10 +4,14 @@ import argparse
 from distributed import Client as DaskClient
 
 from pipeline.config import ExpungeConfig
-from pipeline.io import fetch_expunge_data, write_to_csv, load_to_db
+from pipeline.database import (
+    fetch_expunge_data, 
+    write_to_csv, 
+    load_to_db
+)
 from pipeline.featurize import build_features
 from pipeline.classify import classify_in_parallel
-from pipeline.db import expunge_features
+from pipeline.database import features
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +36,7 @@ def run_classification(config: ExpungeConfig, n_partitions: int = None) -> str:
         Query results with: 
 
         SELECT * 
-        FROM {expunge_features.name} 
+        FROM {features.name} 
         WHERE run_id = '{config.run_id}'
     """)
 

@@ -13,17 +13,17 @@ Project expungement {
   '''
 }
 
-Table "expunge_clean" {
-  "charge_id" integer [pk, unique, increment, Note: 'Unique identifier for one charge for a single individual']
+Table "charges" {
+  "id" integer [pk, unique, increment, Note: 'Unique identifier for one charge for a single individual']
   "person_id" bigint [Note: 'Identifier for a single individual']
-  "HearingDate" date [Note: 'Court hearing date for criminal charge']
-  "CodeSection" text [Note: 'Relevant section of VA criminal code for the charge']
-  "ChargeType" text [Note: 'Category of charge type (felony, etc)']
-  "Class" text [Note: 'Class of charge severity']
-  "DispositionCode" text [Note: 'Court\'s final determination on a charge']
-  "Plea" text [Note: 'Defendant\'s plea for charge']
-  "Race" text [Note: 'Race of the charged individual']
-  "Sex" text [Note: 'Sex of the charged individual']
+  "hearing_date" date [Note: 'Court hearing date for criminal charge']
+  "code_section" text [Note: 'Relevant section of VA criminal code for the charge']
+  "charge_type" text [Note: 'Category of charge type (felony, etc)']
+  "charge_class" text [Note: 'Class of charge severity']
+  "disposition_code" text [Note: 'Court\'s final determination on a charge']
+  "plea" text [Note: 'Defendant\'s plea for charge']
+  "race" text [Note: 'Race of the charged individual']
+  "sex" text [Note: 'Sex of the charged individual']
   "fips" integer [Note: 'FIPS code for the location of the court']
 
   Note: '''
@@ -32,28 +32,28 @@ Table "expunge_clean" {
   '''
 }
 
-Table "expunge_features" {
-  "charge_id" integer [ref: > expunge_clean.charge_id]
+Table "features" {
+  "charge_id" integer [ref: > charges.id]
   "run_id" text [Note: 'Identifier for a single classification run']
-  "disposition" text
-  "chargetype" text
-  "codesection" text
-  "convictions" boolean
-  "last_hearing_date" date
-  "last_felony_conviction_date" date
-  "next_conviction_date" date
-  "last_hearing_delta" numeric
-  "last_felony_conviction_delta" numeric
-  "next_conviction_delta" numeric
-  "from_present_delta" numeric
-  "arrest_disqualifier" boolean
-  "felony_conviction_disqualifier" boolean
-  "next_conviction_disqualifier_after_misdemeanor" boolean
-  "next_conviction_disqualifier_after_felony" boolean
-  "pending_after_misdemeanor" boolean
-  "pending_after_felony" boolean
-  "class1_2" boolean
-  "class3_4" boolean
+  "disposition_type" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']
+  "charge_type" text [Note: 'Felony vs. Misdemeanor']
+  "code_section_category" text [Note: '']
+  "has_convictions" boolean [Note: '']
+  "last_hearing_date" date [Note: '']
+  "last_felony_conviction_date" date [Note: '']
+  "next_conviction_date" date [Note: '']
+  "last_hearing_delta" numeric [Note: '']
+  "last_felony_conviction_delta" numeric [Note: '']
+  "next_conviction_delta" numeric [Note: '']
+  "from_present_delta" numeric [Note: '']
+  "arrest_disqualifier" boolean [Note: '']
+  "felony_conviction_disqualifier" boolean [Note: '']
+  "next_conviction_disqualifier_after_misdemeanor" boolean [Note: '']
+  "next_conviction_disqualifier_after_felony" boolean [Note: '']
+  "pending_after_misdemeanor" boolean [Note: '']
+  "pending_after_felony" boolean [Note: '']
+  "is_class_1_or_2" boolean [Note: 'Is the charge a class 1 or 2 offense?']
+  "is_class_3_or_4" boolean [Note: 'Is the charge a class 3 or 4 offense?']
 
   Note: '''
     Necessary features for the expungement eligibility
@@ -61,12 +61,12 @@ Table "expunge_features" {
   '''
 }
 
-Table "expunge_eligibility" {
-  "charge_id" integer [ref: > expunge_clean.charge_id]
+Table "outcomes" {
+  "charge_id" integer [ref: > charges.id]
   "run_id" text [Note: 'Identifier for a single classification run']
-  "expungibility" text [Note: 'Eligibility for expungement']
+  "expungability" text [Note: 'Eligibility for expungement']
   
   Note: 'Expungement eligibility classification results by `run_id`'
 }
 
-Ref: expunge_eligibility.(charge_id, run_id) - expunge_features.(charge_id, run_id)
+Ref: outcomes.(charge_id, run_id) - features.(charge_id, run_id)
