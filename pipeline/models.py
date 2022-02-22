@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import ARRAY
 
 
 Base = declarative_base()
@@ -22,16 +23,43 @@ class Charges(Base):
     fips = sa.Column(sa.Integer())
 
 
+class Runs(Base):
+
+    __tablename__ = 'runs'
+
+    id = sa.Column(sa.Text(), primary_key=True, unique=True)
+    cutoff_date = sa.Column(sa.Date())
+    covered_sections_a = sa.Column(ARRAY(sa.Text()))
+    covered_sections_b = sa.Column(ARRAY(sa.Text()))
+    covered_sections_b_misdemeanor = sa.Column(ARRAY(sa.Text()))
+    excluded_sections_twelve = sa.Column(ARRAY(sa.Text()))
+    years_since_arrest = sa.Column(sa.Integer())
+    years_since_felony = sa.Column(sa.Integer())
+    years_until_conviction_after_misdemeanor = sa.Column(sa.Integer())
+    years_until_conviction_after_felony = sa.Column(sa.Integer())
+    lifetime_rule = sa.Column(sa.Boolean())
+    sameday_rule = sa.Column(sa.Boolean())
+
+
+class Outcomes(Base):
+
+    __tablename__ = 'outcomes'
+
+    id = sa.Column(sa.Text(), primary_key=True, unique=True)
+    charge_id = sa.Column(sa.Integer(), sa.ForeignKey('charges.id'))
+    run_id = sa.Column(sa.Text(), sa.ForeignKey('runs.id'))
+    expungability = sa.Column(sa.Text())
+
+
 class Features(Base):
 
     __tablename__ = 'features'
 
-    charge_id = sa.Column(sa.Integer(), sa.ForeignKey('charges.id'))
-    run_id = sa.Column(sa.Text(), sa.ForeignKey('outcomes.run_id'))
-    disposition = sa.Column(sa.Text())
-    chargetype = sa.Column(sa.Text())
-    codesection = sa.Column(sa.Text())
-    convictions = sa.Column(sa.Boolean())
+    outcome_id = sa.Column(sa.Text(), sa.ForeignKey('outcomes.id'), primary_key=True, unique=True)
+    disposition_type = sa.Column(sa.Text())
+    charge_type = sa.Column(sa.Text())
+    code_section_category = sa.Column(sa.Text())
+    has_conviction = sa.Column(sa.Boolean())
     last_hearing_date = sa.Column(sa.Date())
     last_felony_conviction_date = sa.Column(sa.Date())
     next_conviction_date = sa.Column(sa.Date())
@@ -45,14 +73,5 @@ class Features(Base):
     next_conviction_disqualifier_after_felony = sa.Column(sa.Boolean())
     pending_after_misdemeanor = sa.Column(sa.Boolean())
     pending_after_felony = sa.Column(sa.Boolean())
-    class1_2 = sa.Column(sa.Boolean())
-    class3_4 = sa.Column(sa.Boolean())
-
-
-class Outcomes(Base):
-
-    __tablename__ = 'outcomes'
-
-    charge_id = sa.Column(sa.Integer(), sa.ForeignKey('charges.id'))
-    run_id = sa.Column(sa.Text())
-    expungability = sa.Column(sa.Text())
+    is_class_1_or_2 = sa.Column(sa.Boolean())
+    is_class_3_or_4 = sa.Column(sa.Boolean())
