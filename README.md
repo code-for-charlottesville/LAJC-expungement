@@ -21,7 +21,7 @@ For examples of connecting to the database, see [the `/examples` folder](example
 [Visit the database documentation on dbdocs.io](https://dbdocs.io/isaak-a/expungement) :link:
 
 <a href="https://dbdocs.io/isaak-a/expungement">
-    <img src="assets/dbdocs-screenshot.png" width=300>
+    <img src="assets/dbdocs-screenshot.png" width=400>
 </a>
 
 [1]: https://dbdocs.io/isaak-a/expungement
