@@ -18,8 +18,7 @@ For examples of connecting to the database, see [the `/examples` folder](example
 
 ## About the Data
 
-[Visit the database documentation on dbdocs.io](https://dbdocs.io/isaak-a/expungement)
-<img src="https://img.icons8.com/cotton/64/000000/external-link--v1.png" width=15/>
+[Visit the database documentation on dbdocs.io](https://dbdocs.io/isaak-a/expungement) :link:
 
 [![](assets/dbdocs-screenshot.png)][1]
 
