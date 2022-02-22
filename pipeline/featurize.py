@@ -1,6 +1,5 @@
 import logging
 from uuid import uuid4
-import argparse
 
 import pandas as pd
 import numpy as np
