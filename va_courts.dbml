@@ -59,7 +59,11 @@ Table "runs" {
 }
 
 Table "outcomes" {
-  "id" text [pk, unique]
+  "id" text [
+    pk, 
+    unique, 
+    Note: 'Lookup key for expungement classification outcomes'
+  ]
   "charge_id" integer [ref: > charges.id]
   "run_id" text [ref: > runs.id, Note: 'Identifier for a single classification run']
   "expungability" text [Note: 'Eligibility for expungement']
@@ -68,12 +72,13 @@ Table "outcomes" {
 }
 
 Table "features" {
-  "outcome_id" text [
+  "id" text [
     pk, 
     unique, 
-    ref: - outcomes.id,
-    Note: 'Lookup key for expungement classification outcome'
+    Note: 'Lookup key for expungement classification features'
   ]
+  "charge_id" integer [ref: > charges.id]
+  "run_id" text [ref: > runs.id, Note: 'Identifier for a single classification run']
 
   "disposition_type" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']
   "charge_type" text [Note: 'Felony vs. Misdemeanor']
