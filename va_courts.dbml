@@ -15,7 +15,7 @@ Project expungement {
 
 
 Table "charges" {
-  "id" integer [pk, unique, increment, Note: 'Unique identifier for one charge for a single individual']
+  "id" bigint [pk, unique, increment, Note: 'Unique identifier for one charge for a single individual']
   "person_id" bigint [Note: 'Identifier for a single individual']
   "hearing_date" date [Note: 'Court hearing date for criminal charge']
   "code_section" text [Note: 'Relevant section of VA criminal code for the charge']
@@ -59,12 +59,13 @@ Table "runs" {
 }
 
 Table "outcomes" {
-  "id" text [
+  "id" bigint [
     pk, 
     unique, 
+    increment,
     Note: 'Lookup key for expungement classification outcomes'
   ]
-  "charge_id" integer [ref: > charges.id]
+  "charge_id" bigint [ref: > charges.id]
   "run_id" text [ref: > runs.id, Note: 'Identifier for a single classification run']
   "expungability" text [Note: 'Eligibility for expungement']
 
@@ -72,12 +73,13 @@ Table "outcomes" {
 }
 
 Table "features" {
-  "id" text [
+  "id" bigint [
     pk, 
-    unique, 
+    unique,  
+    increment,
     Note: 'Lookup key for expungement classification features'
   ]
-  "charge_id" integer [ref: > charges.id]
+  "charge_id" bigint [ref: > charges.id]
   "run_id" text [ref: > runs.id, Note: 'Identifier for a single classification run']
 
   "disposition_type" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']

@@ -10,7 +10,7 @@ class Charges(Base):
 
     __tablename__ = 'charges'
 
-    id = sa.Column(sa.Integer(), autoincrement=True, primary_key=True, unique=True)
+    id = sa.Column(sa.BigInteger(), autoincrement=True, primary_key=True, unique=True)
     person_id = sa.Column(sa.BigInteger())
     hearing_date = sa.Column(sa.Date())
     code_section = sa.Column(sa.Text())
@@ -45,8 +45,8 @@ class Outcomes(Base):
 
     __tablename__ = 'outcomes'
 
-    id = sa.Column(sa.Text(), primary_key=True, unique=True)
-    charge_id = sa.Column(sa.Integer(), sa.ForeignKey('charges.id'))
+    id = sa.Column(sa.BigInteger(), autoincrement=True, primary_key=True, unique=True)
+    charge_id = sa.Column(sa.BigInteger(), sa.ForeignKey('charges.id'))
     run_id = sa.Column(sa.Text(), sa.ForeignKey('runs.id'))
     expungability = sa.Column(sa.Text())
 
@@ -55,7 +55,9 @@ class Features(Base):
 
     __tablename__ = 'features'
 
-    outcome_id = sa.Column(sa.Text(), sa.ForeignKey('outcomes.id'), primary_key=True, unique=True)
+    id = sa.Column(sa.BigInteger(), autoincrement=True, primary_key=True, unique=True)
+    charge_id = sa.Column(sa.BigInteger(), sa.ForeignKey('charges.id'))
+    run_id = sa.Column(sa.Text(), sa.ForeignKey('runs.id'))
     disposition_type = sa.Column(sa.Text())
     charge_type = sa.Column(sa.Text())
     code_section_category = sa.Column(sa.Text())
