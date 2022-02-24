@@ -1,5 +1,8 @@
 #!/bin/bash
-
+#
+# Generate SQLAlchemy models from DBML database documentation file. 
+# Uses DBML CLI to translate DBML -> SQL, then O!MyModels to 
+# translate SQL -> models.py
 
 DBML_FILE=../va_courts.dbml
 MODELS_LOCATION=../pipeline # SQLAlchemy models file directory
