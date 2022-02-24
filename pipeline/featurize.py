@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import dask.dataframe as dd
 
-from pipeline.config import ExpungeConfig
+from pipeline.expunge_config import ExpungeConfig
 
 
 logger = logging.getLogger(__name__)
