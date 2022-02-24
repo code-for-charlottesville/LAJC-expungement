@@ -3,7 +3,7 @@ import argparse
 
 from distributed import Client as DaskClient
 
-from pipeline.config import ExpungeConfig
+from pipeline.expunge_config import ExpungeConfig
 from pipeline.database import (
     fetch_expunge_data, 
     write_to_csv, 

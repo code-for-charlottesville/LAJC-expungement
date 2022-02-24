@@ -7,7 +7,7 @@ import sqlalchemy as sa
 import dask.dataframe as dd
 import pandas as pd
 
-from pipeline.config import ExpungeConfig
+from pipeline.expunge_config import ExpungeConfig
 from pipeline.models import Charges, Features, Base
 
 
