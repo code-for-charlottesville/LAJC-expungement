@@ -25,7 +25,7 @@ Table "charges" {
   "plea" text [Note: 'Defendant\'s plea for charge']
   "race" text [Note: 'Race of the charged individual']
   "sex" text [Note: 'Sex of the charged individual']
-  "fips" integer [Note: 'FIPS code for the location of the court']
+  "fips" text [Note: 'FIPS code for the location of the court']
 
   Note: '''
     Virginia courts criminal charge data, with one

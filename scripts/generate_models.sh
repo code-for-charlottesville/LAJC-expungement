@@ -5,7 +5,7 @@
 # translate SQL -> models.py
 
 DBML_FILE=../va_courts.dbml
-MODELS_LOCATION=../pipeline # SQLAlchemy models file directory
+MODELS_LOCATION=../db # SQLAlchemy models file directory
 TEMP_FILE=/tmp/models.sql # Location for writing intermediate .sql file
 
 

@@ -20,7 +20,7 @@ class Charges(Base):
     plea = sa.Column(sa.Text())
     race = sa.Column(sa.Text())
     sex = sa.Column(sa.Text())
-    fips = sa.Column(sa.Integer())
+    fips = sa.Column(sa.Text())
 
 
 class Runs(Base):
