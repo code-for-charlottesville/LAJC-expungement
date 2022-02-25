@@ -21,11 +21,6 @@ DB = 'expunge'
 
 DATABASE_URI = f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}"
 
-# Dask only accepts queries built on SQLAlchemy Table objects,
-# which are being extracted from declarative models here. 
-charges: sa.Table = Charges.__table__
-features: sa.Table = Features.__table__
-
 
 def get_db_engine():
     return sa.create_engine(DATABASE_URI)
@@ -44,7 +39,7 @@ def get_psycopg2_conn():
 def fetch_expunge_data(
     config: ExpungeConfig,
     n_partitions: Union[int, None] = None,
-    custom_query: Union[sa.sql.Select, None] = None
+    custom_query: Union[sa.sql.Selectable, None] = None
 ) -> dd.DataFrame:
     """Fetches criminal records and loads them into a Dask DataFrame. 
 
@@ -57,14 +52,14 @@ def fetch_expunge_data(
             the charges table, sorted by person_id and HearingDate. 
     """
     query = custom_query if custom_query is not None else (
-        sa.select(charges)
+        sa.select(Charges)
             .where(
                 # Filter out any records with future hearing dates
-                charges.c.HearingDate < config.cutoff_date
+                Charges.hearing_date < config.cutoff_date
             )
             .order_by(
-                charges.c.person_id,
-                charges.c.HearingDate
+                Charges.person_id,
+                Charges.hearing_date
             )
     )
 
@@ -84,7 +79,7 @@ def fetch_expunge_data(
 
     kwargs = {'npartitions': n_partitions} if n_partitions else {}
 
-    logger.info(f"Reading from table: {charges.name}")
+    logger.info(f"Reading from table: {Charges.__tablename__}")
     if n_partitions:
         logger.info(f"Loading into {n_partitions} partitions")
 
@@ -108,7 +103,8 @@ def write_to_csv(ddf: dd.DataFrame) -> List[str]:
     logger.info(f"Command '{shell_command}' returned with exit value: {exit_val}")
 
     # Reorder columns to match DB table
-    ddf = ddf[[col for col in features.columns.keys() if col != 'person_id']]
+    column_names = Features.__table__.columns.keys()
+    ddf = ddf[[col for col in column_names if col != 'person_id']]
 
     logger.info("Executing Dask task graph and writing results to CSV...")
     file_paths = ddf.to_csv(target_glob)
@@ -125,14 +121,14 @@ def load_to_db(file_paths: List[str], config: ExpungeConfig):
         with conn.cursor() as cursor:
             logger.info(f"Deleting any records with run_id: {config.run_id}")
             cursor.execute(f"""
-                DELETE FROM {features.name}
+                DELETE FROM {Features.__tablename__}
                 WHERE run_id = '{config.run_id}'
             """)
             for path in file_paths:
                 logger.info(f"Loading from file: {path}")
                 with open(path, 'r') as file:
                     cursor.copy_expert(f"""
-                        COPY {features.name}
+                        COPY {Features.__tablename__}
                         FROM STDIN
                         WITH CSV HEADER
                     """, file)
