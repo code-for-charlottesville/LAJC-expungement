@@ -7,8 +7,8 @@ import sqlalchemy as sa
 import dask.dataframe as dd
 import pandas as pd
 
-from expunge.expunge_config import ExpungeConfig
-from expunge.models import Charges, Features, Base
+from db.models import Charges, Features, Base
+from expunge.config_parser import ExpungeConfig
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,10 @@ DATABASE_URI = f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}"
 # which are being extracted from declarative models here. 
 charges: sa.Table = Charges.__table__
 features: sa.Table = Features.__table__
+
+
+def get_db_engine():
+    return sa.create_engine(DATABASE_URI)
 
 
 def get_psycopg2_conn():

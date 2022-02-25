@@ -8,7 +8,7 @@ from sklearn import tree
 from sklearn.preprocessing import OneHotEncoder
 import dask.dataframe as dd
 
-from expunge.expunge_config import ExpungeConfig
+from expunge.config_parser import ExpungeConfig
 
 
 logger = logging.getLogger(__name__)
