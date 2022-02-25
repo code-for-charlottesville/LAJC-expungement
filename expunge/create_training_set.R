@@ -143,4 +143,4 @@ cases <- cases %>%
     pending_after_felony = within10
   )
 
-write_csv(cases, "./training_set.csv")
+write_csv(cases, "../data/training_set.csv")

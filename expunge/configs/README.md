@@ -7,6 +7,5 @@ To create a new configuration, copy `default.yaml` and rename it appropriately. 
 configuration values. You can then execute the run by passing the YAML file's path to `run.py`: 
 
 ```bash
-python run.py --config configs/<my_config_file_name>.yaml
+python main.py --config configs/<my_config_file_name>.yaml
 ```
-
