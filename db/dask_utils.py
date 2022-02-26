@@ -61,7 +61,7 @@ def ddf_from_model(
     npartitions: int = None
 ) -> dd.DataFrame:
     query = sa.select(model) if custom_query is None else custom_query
-    types_meta = extract_dask_meta(Charges, index_col=index_col)
+    types_meta = extract_dask_meta(model, index_col=index_col)
     return dd.read_sql_query(
         sql=query,
         con=DATABASE_URI,
