@@ -33,6 +33,7 @@ Table "charges" {
   '''
 }
 
+
 Table "runs" {
   "id" text [pk, unique, Note: 'Identifier for an expungement classification run']
   
@@ -58,6 +59,7 @@ Table "runs" {
   '''
 }
 
+
 Table "outcomes" {
   "id" bigint [
     pk, 
@@ -65,12 +67,16 @@ Table "outcomes" {
     increment,
     Note: 'Lookup key for expungement classification outcomes'
   ]
-  "charge_id" bigint [ref: > charges.id]
-  "run_id" text [ref: > runs.id, Note: 'Identifier for a single classification run']
+  "charge_id" bigint
+  "run_id" text [Note: 'Identifier for a single classification run']
   "expungability" text [Note: 'Eligibility for expungement']
 
   Note: 'Expungement eligibility classification results by `run_id`'
 }
+
+Ref: outcomes.charge_id > charges.id [delete: cascade]
+Ref: outcomes.run_id > runs.id [delete: cascade]
+
 
 Table "features" {
   "id" bigint [
@@ -79,8 +85,8 @@ Table "features" {
     increment,
     Note: 'Lookup key for expungement classification features'
   ]
-  "charge_id" bigint [ref: > charges.id]
-  "run_id" text [ref: > runs.id, Note: 'Identifier for a single classification run']
+  "charge_id" bigint
+  "run_id" text [Note: 'Identifier for a single classification run']
 
   "disposition_type" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']
   "charge_type" text [Note: 'Felony vs. Misdemeanor']
@@ -109,3 +115,6 @@ Table "features" {
     classification of criminal records. 
   '''
 }
+
+Ref: features.charge_id > charges.id [delete: cascade]
+Ref: features.run_id > runs.id [delete: cascade]
