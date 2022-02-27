@@ -89,7 +89,7 @@ def clean_charge_data(ddf: dd.DataFrame) -> dd.DataFrame:
     )
 
 
-def load_charges(engine: Engine, npartitions: None):
+def load_charges(engine: Engine, npartitions: int = None):
     ddf = dd.read_sql_table(
         'expunge',
         DATABASE_URI,

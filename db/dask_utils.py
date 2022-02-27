@@ -1,17 +1,23 @@
 import logging
 import datetime
-from typing import Union, List
+from typing import Union, List, Any
 import os
 
 import sqlalchemy as sa
-from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.engine import Engine
 import dask.dataframe as dd
 import pandas as pd
 
-from db.utils import DATABASE_URI, get_psycopg2_conn
-from db.models import Charges, Features
+from db.utils import (
+    DATABASE_URI, 
+    create_db_engine, 
+    extract_model_columns
+)
+from db.models import Charges, Features, Base as BaseModel
 from expunge.config_parser import ExpungeConfig
 
+
+FilePaths = List[str]
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +33,7 @@ def python_dt_type_to_numpy(python_type: type) -> type:
 
 
 def extract_dask_meta(
-    model: DeclarativeMeta, 
+    model: BaseModel, 
     index_col: str = None
 ) -> pd.DataFrame:
     """Extract metadata (typing info) from a SQLAlchemy model 
@@ -55,7 +61,7 @@ def extract_dask_meta(
 
 
 def ddf_from_model(
-    model: DeclarativeMeta,
+    model: BaseModel,
     index_col: str,
     custom_query: sa.sql.Selectable = None,
     npartitions: int = None
@@ -127,9 +133,32 @@ def fetch_expunge_data(
     )
 
 
-def write_to_csv(ddf: dd.DataFrame) -> List[str]:
+def rm_cmd(rm_target: str):
+    shell_command = f"rm -rf {rm_target}"
+    exit_val = os.system(shell_command)
+    logger.info(f"Command '{shell_command}' returned with exit value: {exit_val}")
+    if exit_val != 0:
+        raise Exception("Shell command failed")
+
+
+def write_to_csv(ddf: dd.DataFrame) -> FilePaths:
     target_dir = '/tmp/expunge_data'
-    target_glob = f"{target_dir}/expunge_features-*.csv"
+    target_glob = f"{target_dir}/expunge-*.csv"
+    logger.info(f"Writing data to: {target_dir}")
+
+    logger.info("Clearing any data from previous runs")
+    rm_cmd(target_glob)
+
+    logger.info("Executing Dask task graph and writing results to CSV...")
+    file_paths = ddf.to_csv(target_glob)
+    logger.info("File(s) written successfully")
+
+    return file_paths
+
+
+def write_features_to_csv(ddf: dd.DataFrame) -> List[str]:
+    target_dir = '/tmp/expunge_data'
+    target_glob = f"{target_dir}/expunge-*.csv"
     logger.info(f"Expungement feature data will be written to: {target_dir}")
 
     logger.info("Clearing any data from previous runs")
@@ -148,9 +177,36 @@ def write_to_csv(ddf: dd.DataFrame) -> List[str]:
     return file_paths
 
 
-def copy_files_to_db(file_paths: List[str], config: ExpungeConfig):
-    logger.info("Opening connection to PostGres via Psycopg")
-    conn = get_psycopg2_conn()
+def copy_files_to_db(
+    model: BaseModel, 
+    file_paths: FilePaths,
+    engine: Engine
+):
+    columns = extract_model_columns(model, exclude_autoincrement=True)
+    
+    # Extracting the underlying Psycopg2 connection to access
+    # bulk loading features not exposed by SQLAlchemy
+    db_conn = engine.raw_connection()
+
+    with db_conn.cursor() as cursor:
+        for path in file_paths:
+            logger.info(f"Loading from file: {path}")
+            with open(path, 'r') as file:
+                cursor.copy_expert(f"""
+                    COPY {model.__tablename__} (
+                        {','.join(columns)}
+                    )
+                    FROM STDIN
+                    WITH CSV HEADER
+                """, file)
+                
+    db_conn.commit()
+    logger.info(f"Files loaded to table: '{model.__tablename__}'")
+
+
+def copy_results_to_db(file_paths: List[str], config: ExpungeConfig):
+    engine = create_db_engine()
+    conn = engine.raw_connection()
 
     with conn:
         with conn.cursor() as cursor:
@@ -171,6 +227,10 @@ def copy_files_to_db(file_paths: List[str], config: ExpungeConfig):
     logger.info(f"Load to DB complete")
 
 
-def load_to_db(ddf: dd.DataFrame, config: ExpungeConfig):
+def load_to_db(
+    ddf: dd.DataFrame, 
+    target_model: BaseModel,
+    engine = Engine
+):
     file_paths = write_to_csv(ddf)
-    copy_files_to_db(file_paths, config)
+    copy_files_to_db(target_model, file_paths, engine)
