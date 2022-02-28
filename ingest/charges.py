@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 
 from sqlalchemy.engine import Engine
 from distributed import Client as DaskClient
@@ -13,17 +14,19 @@ from db.models import Charges
 logger = logging.getLogger(__name__)
 
 
-def read_raw_data() -> dd.DataFrame:
+def read_raw_data(npartitions: int) -> dd.DataFrame:
     logger.info('Reading raw data into Dask')
     return dd.read_sql_table(
         'expunge',
         DATABASE_URI,
-        index_col='person_id'
+        index_col='id',
+        npartitions=npartitions
     )
 
 
 def rename_columns(ddf: dd.DataFrame) -> dd.DataFrame:
     column_map = {
+        'person_id': 'person_id',
         'HearingDate': 'hearing_date',
         'CodeSection': 'code_section',
         'ChargeType': 'charge_type',
@@ -34,13 +37,19 @@ def rename_columns(ddf: dd.DataFrame) -> dd.DataFrame:
         'Sex': 'sex',
         'fips': 'fips'
     }
-    return ddf.rename(columns=column_map)
+    needed_cols = list(column_map.values())
+    return ddf.rename(columns=column_map)[needed_cols]
 
 
 def filter_hearing_dates(ddf: dd.DataFrame) -> dd.DataFrame:
-    ddf['hearing_date'] = ddf['hearing_date'].astype('datetime64[ns]')
     # TODO: Investigate valid reasons for future hearing dates. 
-    return ddf[ddf['hearing_date'] <= np.datetime64('today')]
+    ddf = ddf[
+        ddf['hearing_date'].apply(
+            lambda x: x <= date.today(), 
+            meta=('hearing_date', 'object')
+        )
+    ]
+    return ddf
 
 
 def standardize_race(ddf: dd.DataFrame) -> dd.DataFrame:
@@ -79,7 +88,7 @@ def fix_fips_codes(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf
 
 
-def clean_charge_data(ddf: dd.DataFrame) -> dd.DataFrame:
+def clean_data(ddf: dd.DataFrame) -> dd.DataFrame:
     logger.info("Building task graph to clean data")
     return (
         ddf.pipe(rename_columns)
@@ -89,18 +98,24 @@ def clean_charge_data(ddf: dd.DataFrame) -> dd.DataFrame:
     )
 
 
-def load_charges(engine: Engine, npartitions: int = None):
-    ddf = dd.read_sql_table(
-        'expunge',
-        DATABASE_URI,
-        index_col='person_id',
-        npartitions=npartitions
-    )
-    ddf = clean_charge_data(ddf)
+def load_charges(
+    engine: Engine, 
+    npartitions: int = None,
+    clear_existing: bool = False
+):
+    ddf = read_raw_data(npartitions)
+    ddf = clean_data(ddf)
+    
+    if clear_existing:
+        engine.execute(f"""
+            DELETE FROM {Charges.__tablename__}
+        """)
+        
     load_to_db(
         ddf, 
         target_model=Charges, 
-        engine=engine
+        engine=engine,
+        include_index=False
     )
 
 
@@ -112,4 +127,4 @@ if __name__ == '__main__':
     )
     DaskClient()
     engine = create_db_engine()
-    load_charges(engine)
+    load_charges(engine, clear_existing=True)

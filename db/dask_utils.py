@@ -141,7 +141,7 @@ def rm_cmd(rm_target: str):
         raise Exception("Shell command failed")
 
 
-def write_to_csv(ddf: dd.DataFrame) -> FilePaths:
+def write_to_csv(ddf: dd.DataFrame, include_index: bool = True) -> FilePaths:
     target_dir = '/tmp/expunge_data'
     target_glob = f"{target_dir}/expunge-*.csv"
     logger.info(f"Writing data to: {target_dir}")
@@ -150,7 +150,7 @@ def write_to_csv(ddf: dd.DataFrame) -> FilePaths:
     rm_cmd(target_glob)
 
     logger.info("Executing Dask task graph and writing results to CSV...")
-    file_paths = ddf.to_csv(target_glob)
+    file_paths = ddf.to_csv(target_glob, index=include_index)
     logger.info("File(s) written successfully")
 
     return file_paths
@@ -230,7 +230,8 @@ def copy_results_to_db(file_paths: List[str], config: ExpungeConfig):
 def load_to_db(
     ddf: dd.DataFrame, 
     target_model: BaseModel,
-    engine = Engine
+    engine: Engine, 
+    include_index: bool = True
 ):
-    file_paths = write_to_csv(ddf)
+    file_paths = write_to_csv(ddf, include_index=include_index)
     copy_files_to_db(target_model, file_paths, engine)
