@@ -3,8 +3,7 @@ import argparse
 
 from distributed import Client as DaskClient
 
-from db.utils import (
-    fetch_expunge_data, 
+from db.dask_utils import (
     write_to_csv, 
     load_to_db
 )

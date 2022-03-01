@@ -77,62 +77,6 @@ def ddf_from_model(
     )
 
 
-def fetch_expunge_data(
-    config: ExpungeConfig,
-    n_partitions: Union[int, None] = None,
-    custom_query: Union[sa.sql.Selectable, None] = None
-) -> dd.DataFrame:
-    """Fetches criminal records and loads them into a Dask DataFrame. 
-
-    Args:
-        n_partitions: The number of underlying Pandas DataFrames to partition
-            the table into (partitioned by 'person_id'). If None, we allow 
-            Dask to choose automatically. 
-        custom_query: A custom SQLAlchemy query object that will be used to
-            query data. If not passed, Dask will fetch all data from 
-            the charges table, sorted by person_id and HearingDate. 
-    """
-    query = custom_query if custom_query is not None else (
-        sa.select(Charges)
-            .where(
-                # Filter out any records with future hearing dates
-                Charges.hearing_date < config.cutoff_date
-            )
-            .order_by(
-                Charges.person_id,
-                Charges.hearing_date
-            )
-    )
-
-    dask_types = {
-        # 'record_id': 'int64',
-        'HearingDate': 'datetime64[ns]',
-        'CodeSection': str,
-        'ChargeType': str,
-        'Class': str,
-        'DispositionCode': str,
-        'Plea': str,
-        'Race': str,
-        'Sex': str,
-        'fips': 'int64'
-    }
-    meta_frame = pd.DataFrame(columns=dask_types.keys()).astype(dask_types)
-
-    kwargs = {'npartitions': n_partitions} if n_partitions else {}
-
-    logger.info(f"Reading from table: {Charges.__tablename__}")
-    if n_partitions:
-        logger.info(f"Loading into {n_partitions} partitions")
-
-    return dd.read_sql_table(
-        table=query,
-        index_col='person_id',
-        uri=DATABASE_URI,
-        meta=meta_frame,
-        **kwargs
-    )
-
-
 def rm_cmd(rm_target: str):
     shell_command = f"rm -rf {rm_target}"
     exit_val = os.system(shell_command)
