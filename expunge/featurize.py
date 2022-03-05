@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 def remove_invalid_dispositions(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf[
-        (~ddf['DispositionCode'].isna())
-        & (ddf['DispositionCode'].isin([
+        (~ddf['disposition_code'].isna())
+        & (ddf['disposition_code'].isin([
             'Guilty',
             'Guilty In Absentia',
             'Dismissed',
@@ -29,7 +29,7 @@ def remove_invalid_dispositions(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def clean_data(ddf: dd.DataFrame) -> dd.DataFrame:
-    ddf['CodeSection'] = ddf['CodeSection'].fillna('MISSING')
+    ddf['code_section'] = ddf['code_section'].fillna('MISSING')
     ddf = remove_invalid_dispositions(ddf)
     return ddf
 
@@ -42,7 +42,7 @@ def build_disposition(ddf: dd.DataFrame) -> dd.DataFrame:
     - Dismissed
     - Deferral Dismissal
     """
-    ddf['disposition'] = ddf['DispositionCode'].replace({
+    ddf['disposition_type'] = ddf['disposition_code'].replace({
         'Nolle Prosequi': 'Dismissed',
         'No Indictment Presented': 'Dismissed',
         'Not True Bill': 'Dismissed',
@@ -59,10 +59,10 @@ def build_disposition(ddf: dd.DataFrame) -> dd.DataFrame:
         'Nolo Contendere'
     ]
     deferral_mask = (
-        (ddf['Plea'].isin(deferral_pleas))
-        & (ddf['disposition']=='Dismissed')
+        (ddf['plea'].isin(deferral_pleas))
+        & (ddf['disposition_type']=='Dismissed')
     )
-    ddf['disposition'] = ddf['disposition'].mask(deferral_mask, 'Deferral Dismissal')
+    ddf['disposition_type'] = ddf['disposition_type'].mask(deferral_mask, 'Deferral Dismissal')
 
     return ddf
 

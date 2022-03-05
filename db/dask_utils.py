@@ -1,6 +1,6 @@
 import logging
 import datetime
-from typing import Union, List, Any
+from typing import List
 import os
 
 import sqlalchemy as sa
@@ -13,7 +13,6 @@ from db.utils import (
     create_db_engine, 
     extract_model_columns
 )
-from db.models import Charges, Features, Base as BaseModel
 from expunge.config_parser import ExpungeConfig
 
 
@@ -33,7 +32,7 @@ def python_dt_type_to_numpy(python_type: type) -> type:
 
 
 def extract_dask_meta(
-    model: BaseModel, 
+    table: sa.Table, 
     index_col: str = None
 ) -> pd.DataFrame:
     """Extract metadata (typing info) from a SQLAlchemy model 
@@ -47,7 +46,6 @@ def extract_dask_meta(
     Returns: 
         An empty DataFrame with defined types
     """
-    table: sa.Table = model.__table__
     meta_dict = {
         c.name: python_dt_type_to_numpy(c.type.python_type)
         for c in table.columns
@@ -60,14 +58,14 @@ def extract_dask_meta(
     return df
 
 
-def ddf_from_model(
-    model: BaseModel,
+def ddf_from_table(
+    table: sa.Table,
     index_col: str,
     custom_query: sa.sql.Selectable = None,
     npartitions: int = None
 ) -> dd.DataFrame:
-    query = sa.select(model) if custom_query is None else custom_query
-    types_meta = extract_dask_meta(model, index_col=index_col)
+    query = sa.select(table) if custom_query is None else custom_query
+    types_meta = extract_dask_meta(table, index_col=index_col)
     return dd.read_sql_query(
         sql=query,
         con=DATABASE_URI,
@@ -122,11 +120,11 @@ def write_features_to_csv(ddf: dd.DataFrame) -> List[str]:
 
 
 def copy_files_to_db(
-    model: BaseModel, 
+    table: sa.Table, 
     file_paths: FilePaths,
     engine: Engine
 ):
-    columns = extract_model_columns(model, exclude_autoincrement=True)
+    columns = extract_model_columns(table, exclude_autoincrement=True)
     
     # Extracting the underlying Psycopg2 connection to access
     # bulk loading features not exposed by SQLAlchemy
@@ -137,7 +135,7 @@ def copy_files_to_db(
             logger.info(f"Loading from file: {path}")
             with open(path, 'r') as file:
                 cursor.copy_expert(f"""
-                    COPY {model.__tablename__} (
+                    COPY {table.name} (
                         {','.join(columns)}
                     )
                     FROM STDIN
@@ -145,7 +143,7 @@ def copy_files_to_db(
                 """, file)
                 
     db_conn.commit()
-    logger.info(f"Files loaded to table: '{model.__tablename__}'")
+    logger.info(f"Files loaded to table: '{table.name}'")
 
 
 def copy_results_to_db(file_paths: List[str], config: ExpungeConfig):
@@ -173,9 +171,9 @@ def copy_results_to_db(file_paths: List[str], config: ExpungeConfig):
 
 def load_to_db(
     ddf: dd.DataFrame, 
-    target_model: BaseModel,
+    target_table: sa.Table,
     engine: Engine, 
     include_index: bool = True
 ):
     file_paths = write_to_csv(ddf, include_index=include_index)
-    copy_files_to_db(target_model, file_paths, engine)
+    copy_files_to_db(target_table, file_paths, engine)

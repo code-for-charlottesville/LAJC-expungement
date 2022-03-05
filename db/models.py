@@ -77,3 +77,13 @@ class Features(Base):
     pending_after_felony = sa.Column(sa.Boolean())
     is_class_1_or_2 = sa.Column(sa.Boolean())
     is_class_3_or_4 = sa.Column(sa.Boolean())
+
+
+# Exposing the underlying SQLAlchemy core Table objects. 
+# These are needed because Dask Distributed cannot serialize the 
+# SQLAlchemy ORM declarative objects. 
+# For more on the difference, see: https://docs.sqlalchemy.org/en/14/tutorial/data_select.html
+charges: sa.Table = Charges.__table__
+runs: sa.Table = Runs.__table__
+outcomes: sa.Table = Outcomes.__table__
+features: sa.Table = Features.__table__
