@@ -39,7 +39,7 @@ def train_decision_tree(X: pd.DataFrame, Y: pd.DataFrame) -> tree.DecisionTreeCl
     return decision_tree.fit(X, Y)
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=None) # Cache pre-built classifier, preventing re-training
 def build_encoder_and_classifier() -> Tuple[OneHotEncoder, tree.DecisionTreeClassifier]:
     training_set = load_training_set()
     X, Y = split_training_set(training_set)
