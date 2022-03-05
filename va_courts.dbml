@@ -88,8 +88,8 @@ Table "features" {
   "charge_id" bigint
   "run_id" text [Note: 'Identifier for a single classification run']
 
-  "disposition_type" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']
-  "charge_type" text [Note: 'Felony vs. Misdemeanor']
+  "disposition_category" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']
+  "charge_category" text [Note: 'Felony vs. Misdemeanor']
   "code_section_category" text [Note: 'Classification of VA code section expungement eligibility']
   "has_conviction" boolean [Note: 'Does this person_id have at least 1 conviction?']
 
