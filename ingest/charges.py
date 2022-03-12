@@ -4,11 +4,10 @@ from datetime import date
 from sqlalchemy.engine import Engine
 from distributed import Client as DaskClient
 import dask.dataframe as dd
-import numpy as np
 
 from db.utils import DATABASE_URI, create_db_engine
 from db.dask_utils import load_to_db
-from db.models import Charges
+from db.models import charges
 
 
 logger = logging.getLogger(__name__)
@@ -108,12 +107,12 @@ def load_charges(
     
     if clear_existing:
         engine.execute(f"""
-            DELETE FROM {Charges.__tablename__}
+            DELETE FROM {charges.name}
         """)
         
     load_to_db(
         ddf, 
-        target_model=Charges, 
+        target_table=charges, 
         engine=engine,
         include_index=False
     )
