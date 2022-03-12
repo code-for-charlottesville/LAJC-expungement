@@ -4,8 +4,6 @@ from typing import List
 
 import sqlalchemy as sa
 
-from db.models import Base as BaseModel
-
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +16,10 @@ DB = 'expunge'
 DATABASE_URI = f"postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}"
 
 
-def extract_model_columns(
-    model: BaseModel,
+def extract_table_columns(
+    table: sa.Table,
     exclude_autoincrement: bool = False
 ) -> List[str]:
-    table: sa.Table = model.__table__
     columns = [
         col.name for col in table.columns
         if not (col.autoincrement == True and exclude_autoincrement)

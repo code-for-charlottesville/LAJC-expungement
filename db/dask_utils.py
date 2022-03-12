@@ -11,7 +11,7 @@ import pandas as pd
 from db.utils import (
     DATABASE_URI, 
     create_db_engine, 
-    extract_model_columns
+    extract_table_columns
 )
 from expunge.config_parser import ExpungeConfig
 
@@ -98,25 +98,25 @@ def write_to_csv(ddf: dd.DataFrame, include_index: bool = True) -> FilePaths:
     return file_paths
 
 
-def write_features_to_csv(ddf: dd.DataFrame) -> List[str]:
-    target_dir = '/tmp/expunge_data'
-    target_glob = f"{target_dir}/expunge-*.csv"
-    logger.info(f"Expungement feature data will be written to: {target_dir}")
+# def write_features_to_csv(ddf: dd.DataFrame) -> List[str]:
+#     target_dir = '/tmp/expunge_data'
+#     target_glob = f"{target_dir}/expunge-*.csv"
+#     logger.info(f"Expungement feature data will be written to: {target_dir}")
 
-    logger.info("Clearing any data from previous runs")
-    shell_command = f"rm -rf {target_glob}"
-    exit_val = os.system(f'rm -rf {target_glob}')
-    logger.info(f"Command '{shell_command}' returned with exit value: {exit_val}")
+#     logger.info("Clearing any data from previous runs")
+#     shell_command = f"rm -rf {target_glob}"
+#     exit_val = os.system(f'rm -rf {target_glob}')
+#     logger.info(f"Command '{shell_command}' returned with exit value: {exit_val}")
 
-    # Reorder columns to match DB table
-    column_names = Features.__table__.columns.keys()
-    ddf = ddf[[col for col in column_names if col != 'person_id']]
+#     # Reorder columns to match DB table
+#     column_names = Features.__table__.columns.keys()
+#     ddf = ddf[[col for col in column_names if col != 'person_id']]
 
-    logger.info("Executing Dask task graph and writing results to CSV...")
-    file_paths = ddf.to_csv(target_glob)
-    logger.info("File(s) written successfully")
+#     logger.info("Executing Dask task graph and writing results to CSV...")
+#     file_paths = ddf.to_csv(target_glob)
+#     logger.info("File(s) written successfully")
 
-    return file_paths
+#     return file_paths
 
 
 def copy_files_to_db(
@@ -124,7 +124,7 @@ def copy_files_to_db(
     file_paths: FilePaths,
     engine: Engine
 ):
-    columns = extract_model_columns(table, exclude_autoincrement=True)
+    columns = extract_table_columns(table, exclude_autoincrement=True)
     
     # Extracting the underlying Psycopg2 connection to access
     # bulk loading features not exposed by SQLAlchemy
@@ -146,27 +146,27 @@ def copy_files_to_db(
     logger.info(f"Files loaded to table: '{table.name}'")
 
 
-def copy_results_to_db(file_paths: List[str], config: ExpungeConfig):
-    engine = create_db_engine()
-    conn = engine.raw_connection()
+# def copy_results_to_db(file_paths: List[str], config: ExpungeConfig):
+#     engine = create_db_engine()
+#     conn = engine.raw_connection()
 
-    with conn:
-        with conn.cursor() as cursor:
-            logger.info(f"Deleting any records with run_id: {config.run_id}")
-            cursor.execute(f"""
-                DELETE FROM {Features.__tablename__}
-                WHERE run_id = '{config.run_id}'
-            """)
-            for path in file_paths:
-                logger.info(f"Loading from file: {path}")
-                with open(path, 'r') as file:
-                    cursor.copy_expert(f"""
-                        COPY {Features.__tablename__}
-                        FROM STDIN
-                        WITH CSV HEADER
-                    """, file)
+#     with conn:
+#         with conn.cursor() as cursor:
+#             logger.info(f"Deleting any records with run_id: {config.run_id}")
+#             cursor.execute(f"""
+#                 DELETE FROM {Features.__tablename__}
+#                 WHERE run_id = '{config.run_id}'
+#             """)
+#             for path in file_paths:
+#                 logger.info(f"Loading from file: {path}")
+#                 with open(path, 'r') as file:
+#                     cursor.copy_expert(f"""
+#                         COPY {Features.__tablename__}
+#                         FROM STDIN
+#                         WITH CSV HEADER
+#                     """, file)
 
-    logger.info(f"Load to DB complete")
+#     logger.info(f"Load to DB complete")
 
 
 def load_to_db(
