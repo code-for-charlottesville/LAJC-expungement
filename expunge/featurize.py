@@ -29,12 +29,15 @@ def remove_invalid_dispositions(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def clean_data(ddf: dd.DataFrame) -> dd.DataFrame:
-    ddf['code_section'] = ddf['code_section'].fillna('MISSING')
+    # This line is a carryover from the old classification engine.
+    # Should be deleted when we can ensure it is not being used downstream
+    ddf['code_section_category'] = ddf['code_section'].fillna('MISSING')
+
     ddf = remove_invalid_dispositions(ddf)
     return ddf
 
 
-def build_disposition(ddf: dd.DataFrame) -> dd.DataFrame:
+def build_disposition_category(ddf: dd.DataFrame) -> dd.DataFrame:
     """Group disposition codes into relevant categories for classification. 
 
     The possible relevant categories for expungement classification are: 
@@ -42,7 +45,7 @@ def build_disposition(ddf: dd.DataFrame) -> dd.DataFrame:
     - Dismissed
     - Deferral Dismissal
     """
-    ddf['disposition_type'] = ddf['disposition_code'].replace({
+    ddf['disposition_category'] = ddf['disposition_code'].replace({
         'Nolle Prosequi': 'Dismissed',
         'No Indictment Presented': 'Dismissed',
         'Not True Bill': 'Dismissed',
@@ -60,19 +63,22 @@ def build_disposition(ddf: dd.DataFrame) -> dd.DataFrame:
     ]
     deferral_mask = (
         (ddf['plea'].isin(deferral_pleas))
-        & (ddf['disposition_type']=='Dismissed')
+        & (ddf['disposition_category']=='Dismissed')
     )
-    ddf['disposition_type'] = ddf['disposition_type'].mask(deferral_mask, 'Deferral Dismissal')
+    ddf['disposition_category'] = ddf['disposition_category'].mask(deferral_mask, 'Deferral Dismissal')
 
     return ddf
 
 
-def build_chargetype(ddf: dd.DataFrame) -> dd.DataFrame:
-    ddf['chargetype'] = ddf['ChargeType']
+def build_charge_category(ddf: dd.DataFrame) -> dd.DataFrame:
+    # Currently, charge_category is equivalent to the without
+    # any adjustments. However, it is likely that some cleaning
+    # and categorization will be necessary here in the future. 
+    ddf['charge_category'] = ddf['charge_type']
     return ddf
 
 
-def build_codesection(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+def build_code_section_category(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     """Categorize Virginia legal code section.
 
     Code sections are grouped into categories based on the section of Virginia
@@ -80,27 +86,27 @@ def build_codesection(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     """
     def assign_code_section(row):
         if (
-            row['CodeSection'] in config.covered_sections_a 
-            and row['disposition']=='Deferral Dismissal'
+            row['code_section'] in config.covered_sections_a 
+            and row['disposition_category']=='Deferral Dismissal'
         ):
             return 'covered in 19.2-392.6 - A'
         
         elif (
-            row['CodeSection'] in config.covered_sections_b
+            row['code_section'] in config.covered_sections_b
             or (
-                row['CodeSection'] in config.covered_sections_b_misdemeanor
-                and row['chargetype']=='Misdemeanor'
+                row['code_section'] in config.covered_sections_b_misdemeanor
+                and row['charge_category']=='Misdemeanor'
             )
         ):
             return 'covered in 19.2-392.6 - B'
         
-        elif row['CodeSection'] in config.excluded_sections_twelve:
+        elif row['code_section'] in config.excluded_sections_twelve:
             return 'excluded by 19.2-392.12'
         
         else:
             return 'covered elsewhere'
 
-    ddf['codesection'] = ddf.apply(
+    ddf['code_section_category'] = ddf.apply(
         assign_code_section, 
         axis=1,
         meta=pd.Series(dtype=str)
@@ -109,7 +115,7 @@ def build_codesection(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
 
 
 def has_conviction(df: pd.DataFrame) -> pd.Series:
-    conviction_map = (df['disposition']
+    conviction_map = (df['disposition_category']
             .apply(lambda x: x=='Conviction')
             .groupby('person_id')
             .any())
@@ -117,14 +123,14 @@ def has_conviction(df: pd.DataFrame) -> pd.Series:
     return df.index.map(conviction_map)
 
 
-def build_convictions(ddf: dd.DataFrame) -> dd.DataFrame:
-    """Adds column 'convictions' to Dask DataFrame.
+def build_has_conviction(ddf: dd.DataFrame) -> dd.DataFrame:
+    """Adds column 'has_conviction' to Dask DataFrame.
 
-    'convictions' is assigned to True for a given record if
+    'has_conviction' is assigned to True for a given record if
     the person_id for that record has ANY other records that
     resulted in a conviction. 
     """
-    ddf['convictions'] = ddf.map_partitions(
+    ddf['has_conviction'] = ddf.map_partitions(
         has_conviction,
         meta=pd.Series(dtype=bool)
     )
@@ -133,22 +139,22 @@ def build_convictions(ddf: dd.DataFrame) -> dd.DataFrame:
 
 def get_last_hearing_date(df: pd.DataFrame) -> pd.Series:
     return (
-        df.groupby('person_id')['HearingDate']
+        df.groupby('person_id')['hearing_date']
             .shift(1)
     )
 
 
 def get_conviction_dates(df: pd.DataFrame) -> pd.Series:
     return np.where(
-        (df['disposition']=='Conviction'), 
-        df['HearingDate'],
+        (df['disposition_category']=='Conviction'), 
+        df['hearing_date'],
         np.datetime64('NaT')
     )
 
 
 def get_felony_conviction_dates(df: pd.DataFrame) -> pd.Series:
     return np.where(
-        (df['chargetype']=='Felony'), 
+        (df['charge_category']=='Felony'), 
         df['date_if_conviction'],
         np.datetime64('NaT')
     )
@@ -181,7 +187,7 @@ def fix_shifted_sameday_dates(
     fix_column: str, 
     is_backward_facing: bool = True
 ) -> pd.Series:
-    """Ensure dates features are consistent within one person_id and HearingDate
+    """Ensure dates features are consistent within one person_id and hearing_date
     
     Args:
         df: Single Dask DataFrame partition.
@@ -190,7 +196,7 @@ def fix_shifted_sameday_dates(
             as most recent previous hearing, etc. False if feature concerns more
             recent records.
     """
-    grouped_dates = df.groupby(['person_id','HearingDate'])[fix_column]
+    grouped_dates = df.groupby(['person_id', 'hearing_date'])[fix_column]
     idx = 0 if is_backward_facing else -1
     return grouped_dates.transform('nth', idx)
 
@@ -254,10 +260,10 @@ def build_timedelta_features(
     config: ExpungeConfig
 ) -> dd.DataFrame:
     """Builds features for time differences between records or from present."""
-    ddf['last_hearing_delta'] = ddf['HearingDate'] - ddf['last_hearing_date']
-    ddf['last_felony_conviction_delta'] = ddf['HearingDate'] - ddf['last_felony_conviction_date']
-    ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['HearingDate']
-    ddf['from_present_delta'] = -(ddf['HearingDate'] - np.datetime64(config.cutoff_date))
+    ddf['last_hearing_delta'] = ddf['hearing_date'] - ddf['last_hearing_date']
+    ddf['last_felony_conviction_delta'] = ddf['hearing_date'] - ddf['last_felony_conviction_date']
+    ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['hearing_date']
+    ddf['from_present_delta'] = -(ddf['hearing_date'] - np.datetime64(config.cutoff_date))
 
     ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < config.years_since_arrest
     ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < config.years_since_felony
@@ -287,25 +293,25 @@ def any_true_per_person_id(df: pd.DataFrame, column: str) -> pd.Series:
 def build_class_features(ddf: dd.DataFrame) -> dd.DataFrame:
     """Builds features related to Class 1-4 felony convictions"""
     felony_conviction_mask = (
-        (ddf['chargetype']=='Felony')
-        & (ddf['disposition']=='Conviction')
+        (ddf['charge_category']=='Felony')
+        & (ddf['disposition_category']=='Conviction')
     )
     ddf['is_class_1_or_2'] = (
         felony_conviction_mask
-        & (ddf['Class'].isin(['1', '2']))
+        & (ddf['charge_class'].isin(['1', '2']))
     )
     ddf['is_class_3_or_4'] = (
         felony_conviction_mask
-        & (ddf['Class'].isin(['3', '4']))
+        & (ddf['charge_class'].isin(['3', '4']))
     )
 
     return_meta = pd.Series(dtype=bool)
-    ddf['class1_2'] = ddf.map_partitions(
+    ddf['has_class_1_or_2'] = ddf.map_partitions(
         any_true_per_person_id,
         column='is_class_1_or_2',
         meta=return_meta
     )
-    ddf['class3_4'] = ddf.map_partitions(
+    ddf['has_class_3_or_4'] = ddf.map_partitions(
         any_true_per_person_id,
         column='is_class_3_or_4',
         meta=return_meta
@@ -334,10 +340,10 @@ def append_run_id(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
 def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
     logger.info("Building Dask task graph for feature construction")
     return (
-        ddf.pipe(build_disposition)
-           .pipe(build_chargetype)
-           .pipe(build_codesection, config)
-           .pipe(build_convictions)
+        ddf.pipe(build_disposition_category)
+           .pipe(build_charge_category)
+           .pipe(build_code_section_category, config)
+           .pipe(build_has_conviction)
 
            .pipe(build_date_features)
            .pipe(build_timedelta_features, config)
