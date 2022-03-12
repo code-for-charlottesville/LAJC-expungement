@@ -28,6 +28,9 @@ class Runs(Base):
     __tablename__ = 'runs'
 
     id = sa.Column(sa.Text(), primary_key=True, unique=True)
+    start_at = sa.Column(sa.TIMESTAMP())
+    end_at = sa.Column(sa.TIMESTAMP())
+    status = sa.Column(sa.Text())
     cutoff_date = sa.Column(sa.Date())
     covered_sections_a = sa.Column(ARRAY(sa.Text()))
     covered_sections_b = sa.Column(ARRAY(sa.Text()))

@@ -36,26 +36,51 @@ Table "charges" {
 
 Table "runs" {
   "id" text [pk, unique, Note: 'Identifier for an expungement classification run']
+  "start_at" timestamp [Note: 'When run execution began']
+  "end_at" timestamp [Note: 'When run execution completed']
+  "status" text [Note: '''
+    Classification run status. 
+    Values: `In Progress`, `Complete`, `Failed`, `Canceled`
+  ''']
   
-  "cutoff_date" date
+  "cutoff_date" date [Note: '''
+    Date to use as the "current date" for expungement classification. 
+    Records after this cutoff will be filtered out, and this date will
+    be used to decide whether records are still pending expungement 
+    eligibility
+  ''']
 
   "covered_sections_a" "text[]"
   "covered_sections_b" "text[]"
   "covered_sections_b_misdemeanor" "text[]"
   "excluded_sections_twelve" "text[]"
 
-  "years_since_arrest" int
-  "years_since_felony" int
+  "years_since_arrest" int [Note: 'Years passed since last arrest']
+  "years_since_felony" int [Note: 'Years passed since last felony conviction']
 
-  "years_until_conviction_after_misdemeanor" int
-  "years_until_conviction_after_felony" int
+  "years_until_conviction_after_misdemeanor" int [Note: '''
+    Time gap that must exist between misdemeanor conviction and person's next conviction 
+    to make a record eligible for expungement. If the charge occurred within
+    X number of years of the present, then the charge will be pending 
+    expungability until enough time has passed. 
+  ''']
+  "years_until_conviction_after_felony" int [Note: '''
+    Time gap that must exist between felony conviction and person's next conviction 
+    to make a record eligible for expungement. If the charge occurred within
+    X number of years of the present, then the charge will be pending 
+    expungability until enough time has passed. 
+  ''']
 
-  "lifetime_rule" boolean
-  "sameday_rule" boolean
+  "lifetime_rule" boolean [Note: 'If true, a single person cannot have more than 2 lifetime expungements']
+  "sameday_rule" boolean [Note: '''
+    If true, if a person has an offense that would be automatically expungeable
+    that is on same day as an offense of theirs that is NOT automatically
+    expungeable, the offense that would be automatic must instead be petitioned
+  ''']
 
   Note: '''
-    Reference table with configuration settings for all expungement
-    classification runs. 
+    Reference table with run metadata and configuration settings 
+    for all expungement classification runs. 
   '''
 }
 
