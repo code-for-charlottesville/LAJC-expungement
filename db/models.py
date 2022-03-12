@@ -78,8 +78,8 @@ class Features(Base):
     next_conviction_disqualifier_after_felony = sa.Column(sa.Boolean())
     pending_after_misdemeanor = sa.Column(sa.Boolean())
     pending_after_felony = sa.Column(sa.Boolean())
-    is_class_1_or_2 = sa.Column(sa.Boolean())
-    is_class_3_or_4 = sa.Column(sa.Boolean())
+    has_class_1_or_2 = sa.Column(sa.Boolean())
+    has_class_3_or_4 = sa.Column(sa.Boolean())
 
 
 # Exposing the underlying SQLAlchemy core Table objects. 

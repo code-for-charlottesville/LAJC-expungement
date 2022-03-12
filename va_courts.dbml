@@ -116,7 +116,7 @@ Table "features" {
   "disposition_category" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']
   "charge_category" text [Note: 'Felony vs. Misdemeanor']
   "code_section_category" text [Note: 'Classification of VA code section expungement eligibility']
-  "has_conviction" boolean [Note: 'Does this person_id have at least 1 conviction?']
+  "has_conviction" boolean [Note: 'Person has at least 1 conviction on record']
 
   "last_hearing_date" date [Note: 'Date of most recent previous hearing before this one, if any']
   "last_felony_conviction_date" date [Note: 'Date of most recent previous felony conviction, if any']
@@ -126,14 +126,14 @@ Table "features" {
   "next_conviction_delta" numeric [Note: 'Days until next conviction']
   "from_present_delta" numeric [Note: 'Days until present day, or time of lastest data refresh']
 
-  "arrest_disqualifier" boolean [Note: 'person_id has an arrest on record in last X years']
-  "felony_conviction_disqualifier" boolean [Note: 'person_id has been convicted of a felony in the last X years']
-  "next_conviction_disqualifier_after_misdemeanor" boolean [Note: 'person_id has conviction within X years of this charge & charge is misdemeanor']
-  "next_conviction_disqualifier_after_felony" boolean [Note: 'person_id has conviction within X years of this charge & charge is felony']
+  "arrest_disqualifier" boolean [Note: 'Person has an arrest on record in last X years']
+  "felony_conviction_disqualifier" boolean [Note: 'Person has been convicted of a felony in the last X years']
+  "next_conviction_disqualifier_after_misdemeanor" boolean [Note: 'Person has conviction within X years of this charge & charge is misdemeanor']
+  "next_conviction_disqualifier_after_felony" boolean [Note: 'Person has conviction within X years of this charge & charge is felony']
   "pending_after_misdemeanor" boolean [Note: 'Charge is within X years of present (or last data refresh) & charge is misdemeanor']
   "pending_after_felony" boolean [Note: 'Charge is within X years of present (or last data refresh) & charge is felony']
-  "is_class_1_or_2" boolean [Note: 'Charge is class 1 or 2 offense']
-  "is_class_3_or_4" boolean [Note: 'Charge is class 3 or 4 offense']
+  "has_class_1_or_2" boolean [Note: 'Person has any class 1 or 2 felony convictions on record']
+  "has_class_3_or_4" boolean [Note: 'Person has any class 3 or 4 felony convictions on record']
 
   Note: '''
     Necessary features for the expungement eligibility
