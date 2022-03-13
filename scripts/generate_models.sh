@@ -7,7 +7,7 @@
 set -eu
 
 DBML_FILE=../va_courts.dbml
-MODELS_LOCATION=../db # SQLAlchemy models file directory
+MODELS_LOCATION=../ # SQLAlchemy models file directory
 TEMP_FILE=/tmp/models.sql # Location for writing intermediate .sql file
 
 # Check for script requirements

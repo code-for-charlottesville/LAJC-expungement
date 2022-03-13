@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import dask.dataframe as dd
 
-from expunge.config_parser import ExpungeConfig
+from expunge.config_parser import RunConfig
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def build_charge_category(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf
 
 
-def build_code_section_category(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+def build_code_section_category(ddf: dd.DataFrame, config: RunConfig) -> dd.DataFrame:
     """Categorize Virginia legal code section.
 
     Code sections are grouped into categories based on the section of Virginia
@@ -247,6 +247,35 @@ def build_date_features(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf
 
 
+def calculate_timedeltas(ddf: dd.DataFrame, config: RunConfig) -> dd.DataFrame:
+    """Calculate any needed timedelta columns for later comparisons"""
+    ddf['last_hearing_delta'] = ddf['hearing_date'] - ddf['last_hearing_date']
+    ddf['last_felony_conviction_delta'] = ddf['hearing_date'] - ddf['last_felony_conviction_date']
+    ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['hearing_date']
+    ddf['from_present_delta'] = -(ddf['hearing_date'] - np.datetime64(config.cutoff_date))
+
+    return ddf
+
+
+def build_timedelta_disqualifiers(ddf: dd.DataFrame, config: RunConfig) -> dd.DataFrame:
+    """Build boolean features that depend on timedelta comparisons"""
+    delta_since_arrest = np.timedelta64(config.years_since_arrest)
+    delta_since_felony = np.timedelta64(config.years_since_felony)
+    delta_until_conviction_after_misdemeanor = np.timedelta64(config.years_until_conviction_after_misdemeanor)
+    delta_until_conviction_after_felony = np.timedelta64(config.years_until_conviction_after_felony)
+    delta_until_conviction_after_misdemeanor = np.timedelta64(config.years_until_conviction_after_misdemeanor)
+    delta_until_conviction_after_felony = np.timedelta64(config.years_until_conviction_after_felony)
+
+    ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < delta_since_arrest
+    ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < delta_since_felony
+    ddf['next_conviction_disqualifier_after_misdemeanor'] = ddf['next_conviction_delta'] < delta_until_conviction_after_misdemeanor
+    ddf['next_conviction_disqualifier_after_felony'] = ddf['next_conviction_delta'] < delta_until_conviction_after_felony
+    ddf['pending_after_misdemeanor'] = ddf['from_present_delta'] < delta_until_conviction_after_misdemeanor
+    ddf['pending_after_felony'] = ddf['from_present_delta'] < delta_until_conviction_after_felony
+
+    return ddf
+
+
 def convert_timedeltas_to_days(ddf: dd.DataFrame) -> dd.DataFrame:
     """Convert timedelta columns to days to allow loading to DB as integers."""
     timedelta_cols = [col for col in ddf.columns if col.endswith('_delta')]
@@ -257,24 +286,14 @@ def convert_timedeltas_to_days(ddf: dd.DataFrame) -> dd.DataFrame:
 
 def build_timedelta_features(
     ddf: dd.DataFrame, 
-    config: ExpungeConfig
+    config: RunConfig
 ) -> dd.DataFrame:
     """Builds features for time differences between records or from present."""
-    ddf['last_hearing_delta'] = ddf['hearing_date'] - ddf['last_hearing_date']
-    ddf['last_felony_conviction_delta'] = ddf['hearing_date'] - ddf['last_felony_conviction_date']
-    ddf['next_conviction_delta'] = ddf['next_conviction_date'] - ddf['hearing_date']
-    ddf['from_present_delta'] = -(ddf['hearing_date'] - np.datetime64(config.cutoff_date))
-
-    ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < config.years_since_arrest
-    ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < config.years_since_felony
-    ddf['next_conviction_disqualifier_after_misdemeanor'] = ddf['next_conviction_delta'] < config.years_until_conviction_after_misdemeanor
-    ddf['next_conviction_disqualifier_after_felony'] = ddf['next_conviction_delta'] < config.years_until_conviction_after_felony
-    ddf['pending_after_misdemeanor'] = ddf['from_present_delta'] < config.years_until_conviction_after_misdemeanor
-    ddf['pending_after_felony'] = ddf['from_present_delta'] < config.years_until_conviction_after_felony
-
-    ddf = convert_timedeltas_to_days(ddf)
-
-    return ddf
+    return (
+        ddf.pipe(calculate_timedeltas, config)
+           .pipe(build_timedelta_disqualifiers, config)
+           .pipe(convert_timedeltas_to_days)
+    )
 
 
 def any_true_per_person_id(df: pd.DataFrame, column: str) -> pd.Series:
@@ -330,14 +349,14 @@ def remove_unneeded_columns(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf.drop(uneeded_columns, axis=1)
 
 
-def append_run_id(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+def append_run_id(ddf: dd.DataFrame, config: RunConfig) -> dd.DataFrame:
     """Adds unique ID for querying results of classification pipeline runs"""
-    run_id = str(uuid4()) if config.run_id == 'randomize' else config.run_id
+    run_id = str(uuid4()) if config.id == 'randomize' else config.id
     ddf['run_id'] = run_id
     return ddf
 
 
-def build_features(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+def build_features(ddf: dd.DataFrame, config: RunConfig) -> dd.DataFrame:
     logger.info("Building Dask task graph for feature construction")
     return (
         ddf.pipe(build_disposition_category)

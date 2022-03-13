@@ -10,10 +10,8 @@ import pandas as pd
 
 from db.utils import (
     DATABASE_URI, 
-    create_db_engine, 
     extract_table_columns
 )
-from expunge.config_parser import ExpungeConfig
 
 
 FilePaths = List[str]

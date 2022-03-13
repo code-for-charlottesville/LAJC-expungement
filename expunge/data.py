@@ -3,7 +3,7 @@ import logging
 import dask.dataframe as dd
 import sqlalchemy as sa
 
-from expunge.config_parser import ExpungeConfig
+from expunge.config_parser import RunConfig
 from db.models import charges
 from db.dask_utils import ddf_from_table
 
@@ -11,7 +11,7 @@ from db.dask_utils import ddf_from_table
 logger = logging.getLogger(__name__)
 
 
-def fetch_charges(config: ExpungeConfig, npartitions: int = None) -> dd.DataFrame:
+def fetch_charges(config: RunConfig, npartitions: int = None) -> dd.DataFrame:
     query = (
         sa.select(charges)
             .where(
