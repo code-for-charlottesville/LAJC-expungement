@@ -40,7 +40,7 @@ Table "runs" {
   "end_at" timestamp [Note: 'When run execution completed']
   "status" text [Note: '''
     Classification run status. 
-    Values: `In Progress`, `Complete`, `Failed`, `Canceled`
+    Values: `In Progress`, `Completed`, `Failed`, `Canceled`
   ''']
   
   "cutoff_date" date [Note: '''
