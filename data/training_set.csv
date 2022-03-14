@@ -1,4 +1,4 @@
-chargetype,disposition,codesection,arrest_disqualifier,convictions,felony_conviction_disqualifier,next_conviction_disqualifier_after_misdemeanor,next_conviction_disqualifier_after_felony,pending_after_misdemeanor,pending_after_felony,class1_2,class3_4,expungability
+charge_category,disposition_category,code_section_category,arrest_disqualifier,has_conviction,felony_conviction_disqualifier,next_conviction_disqualifier_after_misdemeanor,next_conviction_disqualifier_after_felony,pending_after_misdemeanor,pending_after_felony,has_class_1_or_2,has_class_3_or_4,expungability
 Misdemeanor,Conviction,covered in 19.2-392.6 - A,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,Automatic
 Felony,Conviction,covered in 19.2-392.6 - A,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,Petition
 Misdemeanor,Dismissed,covered in 19.2-392.6 - A,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,Automatic
