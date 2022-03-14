@@ -3,6 +3,8 @@ import os
 from typing import List
 
 import sqlalchemy as sa
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,12 @@ def extract_table_columns(
     return columns
 
 
-def create_db_engine(echo: bool = False) -> sa.engine.Engine:
+def create_db_engine(echo: bool = False) -> Engine:
     logger.info("Opening connection to PostGres via SQLAlchemy")
     return sa.create_engine(DATABASE_URI, echo=echo)
+
+
+def create_db_session() -> Session:
+    logger.info("Starting a SQLAlchemy session")
+    engine = create_db_engine()
+    return Session(engine)

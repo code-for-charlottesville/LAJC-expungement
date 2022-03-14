@@ -3,43 +3,70 @@ import argparse
 
 from distributed import Client as DaskClient
 
-from db.dask_utils import (
-    write_to_csv, 
-    load_to_db
+from db.utils import create_db_session
+from db.dask_utils import load_to_db
+from db.models import features, outcomes
+from expunge.data import (
+    initialize_run, 
+    fetch_charges,
+    finish_run
 )
-from db.models import Features
-from expunge.config_parser import ExpungeConfig
+from expunge.config_parser import RunConfig, parse_config_file
 from expunge.featurize import build_features
-from expunge.classify import classify_in_parallel
+from expunge.classify import run_classification
 
 
 logger = logging.getLogger(__name__)
 
 
-def run_classification(config: ExpungeConfig, n_partitions: int = None) -> str:
-    logger.info(f"Classification Run ID: {config.run_id}")
+def classify(
+    config: RunConfig, 
+    write_features: bool = False,
+    n_partitions: int = None
+) -> str:
+    logger.info(f"Classification Run ID: {config.id}")
+    session = create_db_session()
+    config = initialize_run(config, session)
     
-    logger.info("Initializing Dask distributed client")
-    DaskClient()
-    
-    ddf = fetch_expunge_data(config, n_partitions)
+    try:
+        logger.info("Initializing Dask distributed client")
+        DaskClient()
+        
+        ddf = fetch_charges(config, n_partitions)
 
-    ddf = build_features(ddf, config)
-    ddf = classify_in_parallel(ddf, config)
+        ddf = build_features(ddf, config)
+        features_ddf, outcomes_ddf = run_classification(ddf, config)
 
-    file_paths = write_to_csv(ddf)
-    load_to_db(file_paths, config)
+        if write_features:
+            load_to_db(
+                features_ddf,
+                target_table=features,
+                engine=session.bind,
+                include_index=False
+            )
 
-    logger.info(f"Expungement classification complete!")
-    logger.info(f"""
-        Query results with: 
+        load_to_db(
+            outcomes_ddf,
+            target_table=outcomes,
+            engine=session.bind,
+            include_index=False
+        )
 
-        SELECT * 
-        FROM {Features.__tablename__} 
-        WHERE run_id = '{config.run_id}'
-    """)
+        logger.info(f"Expungement classification complete!")
+        config.status = 'Completed'
+    except KeyboardInterrupt:
+        logger.info(f"Canceling classification run")
+        config.status = 'Canceled'
+    except Exception as e:
+        logger.info(e)
+        logger.info("Exiting classification run")
+        config.status = 'Failed'
+    finally:
+        run_id = config.id
+        finish_run(config, session)
+        session.close()
 
-    return config.run_id
+    return run_id
 
 
 if __name__ == '__main__':
@@ -59,14 +86,18 @@ if __name__ == '__main__':
         default=None
     )
     parser.add_argument(
+        '-f', '--write-features',
+        action='store_true',
+        help='Flag indicating to save classification features to DB',
+    )
+    parser.add_argument(
         '-c', '--config',
         type=str,
         help='Path to expungement configuration file',
-        default='configs/default.yaml'
+        default='expunge/configs/default.yaml'
     )
     args = parser.parse_args()
 
-    DaskClient()
-    config = ExpungeConfig.from_yaml(args.config)
+    config = parse_config_file(args.config)
 
-    run_classification(config, args.partitions)
+    classify(config, args.write_features, args.partitions)
