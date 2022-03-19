@@ -24,6 +24,7 @@ def read_raw_data(npartitions: int) -> dd.DataFrame:
 
 
 def rename_columns(ddf: dd.DataFrame) -> dd.DataFrame:
+    logger.info("Queueing column renaming")
     column_map = {
         'person_id': 'person_id',
         'HearingDate': 'hearing_date',
@@ -41,6 +42,7 @@ def rename_columns(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def filter_hearing_dates(ddf: dd.DataFrame) -> dd.DataFrame:
+    logger.info("Queueing date filtering")
     # TODO: Investigate valid reasons for future hearing dates. 
     ddf = ddf[
         ddf['hearing_date'].apply(
@@ -52,6 +54,7 @@ def filter_hearing_dates(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def standardize_race(ddf: dd.DataFrame) -> dd.DataFrame:
+    logger.info("Queueing race column standardization")
     race: dd.Series = ddf['race'].str.upper()
     ddf['race'] = (
         ddf['race']
@@ -82,6 +85,7 @@ def standardize_race(ddf: dd.DataFrame) -> dd.DataFrame:
 
 
 def fix_fips_codes(ddf: dd.DataFrame) -> dd.DataFrame:
+    logger.info("Queueing fips code fixes")
     ddf['fips'] = (ddf['fips'].astype(str)
                               .str.pad(5, fillchar='0'))
     return ddf
@@ -106,6 +110,7 @@ def load_charges(
     ddf = clean_data(ddf)
     
     if clear_existing:
+        logger.info("Clearing existing data from 'charges' table")
         engine.execute(f"""
             DELETE FROM {charges.name}
         """)

@@ -54,7 +54,7 @@ def build_encoder_and_classifier() -> Tuple[OneHotEncoder, tree.DecisionTreeClas
     return encoder, decision_tree
 
 
-def classify_features(features: pd.DataFrame) -> pd.Series:
+def classify_frame(features: pd.DataFrame) -> pd.Series:
     encoder, classifier = build_encoder_and_classifier()
 
     needed_features = features[encoder.feature_names_in_]
@@ -124,12 +124,12 @@ def split_tables(ddf: dd.DataFrame) -> Tuple[dd.DataFrame, dd.DataFrame]:
     return ddf[features_cols], ddf[outcomes_cols]
 
 
-def run_classification(
+def classify_distributed_frame(
     ddf: dd.DataFrame, 
     config: RunConfig
 ) -> Tuple[dd.DataFrame, dd.DataFrame]:
     ddf['expungability'] = ddf.map_partitions(
-        classify_features,
+        classify_frame,
         meta=pd.Series(dtype=str)
     )
 
