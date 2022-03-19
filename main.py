@@ -1,6 +1,7 @@
 import logging
-import argparse
+from typing import Optional
 
+import typer
 from distributed import Client as DaskClient
 
 from db.utils import create_db_session
@@ -11,7 +12,7 @@ from expunge.data import (
     fetch_charges,
     finish_run
 )
-from expunge.config_parser import RunConfig, parse_config_file
+from expunge.config_parser import parse_config_file
 from expunge.featurize import build_features
 from expunge.classify import run_classification
 
@@ -20,11 +21,13 @@ logger = logging.getLogger(__name__)
 
 
 def classify(
-    config: RunConfig, 
+    config_path: str, 
     write_features: bool = False,
-    n_partitions: int = None
+    n_partitions: Optional[int] = None
 ) -> str:
+    config = parse_config_file(config_path)
     logger.info(f"Classification Run ID: {config.id}")
+
     session = create_db_session()
     config = initialize_run(config, session)
     
@@ -76,28 +79,4 @@ if __name__ == '__main__':
         datefmt='%H:%M:%S'
     )
 
-    parser = argparse.ArgumentParser(
-        description='Build expungement classification features'
-    )
-    parser.add_argument(
-        '-p', '--partitions',
-        type=int,
-        help='Number of partitions (Pandas DFs) to split data into',
-        default=None
-    )
-    parser.add_argument(
-        '-f', '--write-features',
-        action='store_true',
-        help='Flag indicating to save classification features to DB',
-    )
-    parser.add_argument(
-        '-c', '--config',
-        type=str,
-        help='Path to expungement configuration file',
-        default='expunge/configs/default.yaml'
-    )
-    args = parser.parse_args()
-
-    config = parse_config_file(args.config)
-
-    classify(config, args.write_features, args.partitions)
+    typer.run(classify)
