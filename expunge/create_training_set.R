@@ -135,12 +135,20 @@ cases$expungability <-as.factor(cases$expungability)
 
 cases <- cases %>%
   rename(
+    charge_category = chargetype,
+    disposition_category = disposition,
+    code_section_category = codesection,
+    has_conviction = convictions,
+
     arrest_disqualifier = arrests,
     felony_conviction_disqualifier = felony10,
     next_conviction_disqualifier_after_misdemeanor = sevenyear,
     next_conviction_disqualifier_after_felony = tenyear,
     pending_after_misdemeanor = within7,
-    pending_after_felony = within10
+    pending_after_felony = within10,
+
+    has_class_1_or_2 = class1_2,
+    has_class_3_or_4 = class3_4
   )
 
-write_csv(cases, "./training_set.csv")
+write_csv(cases, "../data/training_set.csv")

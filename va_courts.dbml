@@ -1,0 +1,145 @@
+Project expungement {
+  database_type: 'PostgreSQL'
+
+  Note: '''
+    # Virginia Court Data DB
+
+    These docs are for the PostGreSQL DB supporting
+    the Virginia Court Data Expungement Project. 
+
+    [GitHub Repo](https://github.com/code-for-charlottesville/LAJC-expungement)
+
+    [Project Page](https://www.codeforcville.org/lajc-expungement)
+  '''
+}
+
+
+Table "charges" {
+  "id" bigint [pk, unique, increment, Note: 'Unique identifier for one charge for a single individual']
+  "person_id" bigint [Note: 'Identifier for a single individual']
+  "hearing_date" date [Note: 'Court hearing date for criminal charge']
+  "code_section" text [Note: 'Relevant section of VA criminal code for the charge']
+  "charge_type" text [Note: 'Category of charge type (felony, etc)']
+  "charge_class" text [Note: 'Class of charge severity']
+  "disposition_code" text [Note: 'Court\'s final determination on a charge']
+  "plea" text [Note: 'Defendant\'s plea for charge']
+  "race" text [Note: 'Race of the charged individual']
+  "sex" text [Note: 'Sex of the charged individual']
+  "fips" text [Note: 'FIPS code for the location of the court']
+
+  Note: '''
+    Virginia courts criminal charge data, with one
+    row per charge. 
+  '''
+}
+
+
+Table "runs" {
+  "id" text [pk, unique, Note: 'Identifier for an expungement classification run']
+  "start_at" timestamp [Note: 'When run execution began']
+  "end_at" timestamp [Note: 'When run execution completed']
+  "status" text [Note: '''
+    Classification run status. 
+    Values: `In Progress`, `Completed`, `Failed`, `Canceled`
+  ''']
+  
+  "cutoff_date" date [Note: '''
+    Date to use as the "current date" for expungement classification. 
+    Records after this cutoff will be filtered out, and this date will
+    be used to decide whether records are still pending expungement 
+    eligibility
+  ''']
+
+  "covered_sections_a" "text[]"
+  "covered_sections_b" "text[]"
+  "covered_sections_b_misdemeanor" "text[]"
+  "excluded_sections_twelve" "text[]"
+
+  "years_since_arrest" int [Note: 'Years passed since last arrest']
+  "years_since_felony" int [Note: 'Years passed since last felony conviction']
+
+  "years_until_conviction_after_misdemeanor" int [Note: '''
+    Time gap that must exist between misdemeanor conviction and person's next conviction 
+    to make a record eligible for expungement. If the charge occurred within
+    X number of years of the present, then the charge will be pending 
+    expungability until enough time has passed. 
+  ''']
+  "years_until_conviction_after_felony" int [Note: '''
+    Time gap that must exist between felony conviction and person's next conviction 
+    to make a record eligible for expungement. If the charge occurred within
+    X number of years of the present, then the charge will be pending 
+    expungability until enough time has passed. 
+  ''']
+
+  "lifetime_rule" boolean [Note: 'If true, a single person cannot have more than 2 lifetime expungements']
+  "sameday_rule" boolean [Note: '''
+    If true, if a person has an offense that would be automatically expungeable
+    that is on same day as an offense of theirs that is NOT automatically
+    expungeable, the offense that would be automatic must instead be petitioned
+  ''']
+
+  Note: '''
+    Reference table with run metadata and configuration settings 
+    for all expungement classification runs. 
+  '''
+}
+
+
+Table "outcomes" {
+  "id" bigint [
+    pk, 
+    unique, 
+    increment,
+    Note: 'Lookup key for expungement classification outcomes'
+  ]
+  "charge_id" bigint
+  "run_id" text [Note: 'Identifier for a single classification run']
+  "expungability" text [Note: 'Eligibility for expungement']
+
+  Note: 'Expungement eligibility classification results by `run_id`'
+}
+
+Ref: outcomes.charge_id > charges.id [delete: cascade]
+Ref: outcomes.run_id > runs.id [delete: cascade]
+
+
+Table "features" {
+  "id" bigint [
+    pk, 
+    unique,  
+    increment,
+    Note: 'Lookup key for expungement classification features'
+  ]
+  "charge_id" bigint
+  "run_id" text [Note: 'Identifier for a single classification run']
+
+  "disposition_category" text [Note: 'Conviction, Dismissed, or Deferral Dismissal']
+  "charge_category" text [Note: 'Felony vs. Misdemeanor']
+  "code_section_category" text [Note: 'Classification of VA code section expungement eligibility']
+  "has_conviction" boolean [Note: 'Person has at least 1 conviction on record']
+
+  "last_hearing_date" date [Note: 'Date of most recent previous hearing before this one, if any']
+  "last_felony_conviction_date" date [Note: 'Date of most recent previous felony conviction, if any']
+  "next_conviction_date" date [Note: 'Date of next conviction of any charge, if any']
+  "last_hearing_delta" numeric [Note: 'Days since last hearing']
+  "last_felony_conviction_delta" numeric [Note: 'Days since last felony conviction']
+  "next_conviction_delta" numeric [Note: 'Days until next conviction']
+  "from_present_delta" numeric [Note: 'Days until present day, or time of lastest data refresh']
+
+  "arrest_disqualifier" boolean [Note: 'Person has an arrest on record in last X years']
+  "felony_conviction_disqualifier" boolean [Note: 'Person has been convicted of a felony in the last X years']
+  "next_conviction_disqualifier_after_misdemeanor" boolean [Note: 'Person has conviction within X years of this charge & charge is misdemeanor']
+  "next_conviction_disqualifier_after_felony" boolean [Note: 'Person has conviction within X years of this charge & charge is felony']
+  "pending_after_misdemeanor" boolean [Note: 'Charge is within X years of present (or last data refresh) & charge is misdemeanor']
+  "pending_after_felony" boolean [Note: 'Charge is within X years of present (or last data refresh) & charge is felony']
+  "has_class_1_or_2" boolean [Note: 'Person has any class 1 or 2 felony convictions on record']
+  "has_class_3_or_4" boolean [Note: 'Person has any class 3 or 4 felony convictions on record']
+
+  Note: '''
+    Necessary features for the expungement eligibility
+    classification of criminal records. 
+  '''
+}
+
+Ref: features.charge_id > charges.id [delete: cascade]
+Ref: features.run_id > runs.id [delete: cascade]

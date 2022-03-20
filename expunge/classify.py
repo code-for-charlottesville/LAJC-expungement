@@ -8,12 +8,14 @@ from sklearn import tree
 from sklearn.preprocessing import OneHotEncoder
 import dask.dataframe as dd
 
-from pipeline.config import ExpungeConfig
+from db.dask_utils import extract_table_columns
+from db.models import features, outcomes
+from expunge.config_parser import RunConfig
 
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TRAINING_SET_LOCATION = 'pipeline/training_set.csv'
+DEFAULT_TRAINING_SET_LOCATION = './data/training_set.csv'
 
 
 def load_training_set(training_set_path: str = DEFAULT_TRAINING_SET_LOCATION) -> pd.DataFrame:
@@ -39,7 +41,7 @@ def train_decision_tree(X: pd.DataFrame, Y: pd.DataFrame) -> tree.DecisionTreeCl
     return decision_tree.fit(X, Y)
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=None) # Cache pre-built classifier, preventing re-training
 def build_encoder_and_classifier() -> Tuple[OneHotEncoder, tree.DecisionTreeClassifier]:
     training_set = load_training_set()
     X, Y = split_training_set(training_set)
@@ -52,7 +54,7 @@ def build_encoder_and_classifier() -> Tuple[OneHotEncoder, tree.DecisionTreeClas
     return encoder, decision_tree
 
 
-def classify_features(features: pd.DataFrame) -> pd.Series:
+def classify_frame(features: pd.DataFrame) -> pd.Series:
     encoder, classifier = build_encoder_and_classifier()
 
     needed_features = features[encoder.feature_names_in_]
@@ -64,7 +66,7 @@ def classify_features(features: pd.DataFrame) -> pd.Series:
 def get_sameday_disqualifier(df: pd.DataFrame) -> pd.Series:
     df = df.copy()
     df['is_not_auto'] = ~df['expungability'].isin(['Automatic', 'Automatic (pending)'])
-    return df.groupby(['person_id', 'HearingDate'])['is_not_auto'].transform('any')
+    return df.groupby(['person_id', 'hearing_date'])['is_not_auto'].transform('any')
 
 
 def apply_sameday_rule(ddf: dd.DataFrame) -> dd.DataFrame:
@@ -93,9 +95,9 @@ def get_lifetime_disqualifier(df: pd.DataFrame) -> pd.Series:
     df['running_expunge_count'] = df.groupby('person_id')['is_eligible'].cumsum()
     df['over_2_expungements'] = df['running_expunge_count'] > 2
     df['lifetime_is_applicable'] = (
-        (df['disposition']=='Conviction') 
+        (df['disposition_category']=='Conviction') 
         | (
-            (df['disposition']=='Deferral Dismissal') 
+            (df['disposition_category']=='Deferral Dismissal') 
             & (df['sameday_disqualifier'])
         )
     )
@@ -115,9 +117,19 @@ def apply_lifetime_rule(ddf: dd.DataFrame) -> dd.DataFrame:
     return ddf
 
 
-def classify_in_parallel(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFrame:
+def split_tables(ddf: dd.DataFrame) -> Tuple[dd.DataFrame, dd.DataFrame]:
+    ddf = ddf.rename(columns={'id': 'charge_id'})
+    features_cols = extract_table_columns(features, exclude_autoincrement=True)
+    outcomes_cols = extract_table_columns(outcomes, exclude_autoincrement=True)
+    return ddf[features_cols], ddf[outcomes_cols]
+
+
+def classify_distributed_frame(
+    ddf: dd.DataFrame, 
+    config: RunConfig
+) -> Tuple[dd.DataFrame, dd.DataFrame]:
     ddf['expungability'] = ddf.map_partitions(
-        classify_features,
+        classify_frame,
         meta=pd.Series(dtype=str)
     )
 
@@ -131,4 +143,7 @@ def classify_in_parallel(ddf: dd.DataFrame, config: ExpungeConfig) -> dd.DataFra
     else:
         ddf['lifetime_disqualifier'] = np.NaN
     
-    return ddf
+    logger.info("Executing all queued Dask tasks...")
+    ddf = ddf.persist()
+
+    return split_tables(ddf)
