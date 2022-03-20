@@ -49,7 +49,7 @@ class Outcomes(Base):
     __tablename__ = 'outcomes'
 
     id = sa.Column(sa.BigInteger(), autoincrement=True, primary_key=True, unique=True)
-    charge_id = sa.Column(sa.BigInteger(), sa.ForeignKey('charges.id', ondelete="CASCADE"))
+    charge_id = sa.Column(sa.BigInteger(), sa.ForeignKey('charges.id', ondelete="CASCADE"), index=True)
     run_id = sa.Column(sa.Text(), sa.ForeignKey('runs.id', ondelete="CASCADE"))
     expungability = sa.Column(sa.Text())
 
@@ -59,7 +59,7 @@ class Features(Base):
     __tablename__ = 'features'
 
     id = sa.Column(sa.BigInteger(), autoincrement=True, primary_key=True, unique=True)
-    charge_id = sa.Column(sa.BigInteger(), sa.ForeignKey('charges.id', ondelete="CASCADE"))
+    charge_id = sa.Column(sa.BigInteger(), sa.ForeignKey('charges.id', ondelete="CASCADE"), index=True)
     run_id = sa.Column(sa.Text(), sa.ForeignKey('runs.id', ondelete="CASCADE"))
     disposition_category = sa.Column(sa.Text())
     charge_category = sa.Column(sa.Text())
