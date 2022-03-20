@@ -6,13 +6,18 @@ Project to help the Legal Aid and Justice Center with analysis to support effort
 
 For more details, see the [project page](https://www.codeforcville.org/lajc-expungement) on the Code for Charlottesville website. 
 
+## Quick Links
+
+* [Project CLI Docs](expungement_cli.md)
+* [Database Docs](https://dbdocs.io/isaak-a/expungement)
+
 ## Getting Started
 
 Currently, data for this project is stored in a PostGreSQL DB only accessible from Code for Charlottesville's JupyterHub deployment, avaliable at [tljh.codeforcville.org](tljh.codeforcville.org). 
 
 If you do not yet have login access for JupyterHub, but you would like to get connected and help out, please reach out via the questions box at the bottom of the above project page. 
 
-For examples of connecting to the database, see [the `/examples` folder](examples). 
+For examples of connecting to the database, see [the `examples/` folder](examples). 
 
 - Example of connecting from a Python notebook: [templates/db_example_python.ipynb](templates/db_example_python.ipynb)
 
