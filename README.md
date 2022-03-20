@@ -35,3 +35,11 @@ Data for this project comes from [VirginiaCourtData.org](https://virginiacourtda
 The above documentation site is generated from [`va_courts.dbml`](va_courts.dbml), a database schema definition file written in DBML (Database Modeling Language). 
 
 **Note**: DBML is a very new open source standard for database documentation backed by Holistics.io, the company behind dbdocs.io, which we are using for the above docs. To learn more, see the [DBML Homepage](https://www.dbml.org/home/). 
+
+## Running Project Scripts
+
+This repo contains code for both analysis and data pipelines/processing (including classifying whether charges are eligible for expungement). 
+
+Data processing tasks can be executed via the `main.py` entrypoint CLI. 
+
+For more information about running data processing and expungement classification, see the [Project Scripts Documentation](expungement_cli.md)
