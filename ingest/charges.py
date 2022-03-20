@@ -7,7 +7,7 @@ import dask.dataframe as dd
 
 from db.utils import DATABASE_URI, create_db_engine
 from db.dask_utils import load_to_db
-from db.models import charges
+from db.models import charges, runs, features, outcomes
 
 
 logger = logging.getLogger(__name__)
@@ -110,10 +110,12 @@ def load_charges(
     ddf = clean_data(ddf)
     
     if clear_existing:
-        logger.info("Clearing existing data from 'charges' table")
-        engine.execute(f"""
-            DELETE FROM {charges.name}
-        """)
+        logger.info("Clearing any existing expungement data")
+        for table in [runs, charges, features, outcomes]:
+            logger.info(f"Deleting from: {table.name}")
+            engine.execute(f"""
+                DELETE FROM {table.name}
+            """)
         
     load_to_db(
         ddf, 
