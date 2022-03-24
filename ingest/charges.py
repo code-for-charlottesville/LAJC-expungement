@@ -87,7 +87,7 @@ def standardize_race(ddf: dd.DataFrame) -> dd.DataFrame:
 def fix_fips_codes(ddf: dd.DataFrame) -> dd.DataFrame:
     logger.info("Queueing fips code fixes")
     ddf['fips'] = (ddf['fips'].astype(str)
-                              .str.pad(5, fillchar='0'))
+                              .str.pad(3, fillchar='0'))
     return ddf
 
 
