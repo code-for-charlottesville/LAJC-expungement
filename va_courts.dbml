@@ -25,7 +25,11 @@ Table "charges" {
   "plea" text [Note: 'Defendant\'s plea for charge']
   "race" text [Note: 'Race of the charged individual']
   "sex" text [Note: 'Sex of the charged individual']
-  "fips" text [Note: 'FIPS code for the location of the court']
+  "fips" text [Note: '''
+    FIPS code for the location of the court. This is a 3-digit
+    local fips code, and does not include the 2-digit state code
+    (which is 51 for Virginia)
+  ''']
 
   Note: '''
     Virginia courts criminal charge data, with one
