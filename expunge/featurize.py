@@ -259,12 +259,12 @@ def calculate_timedeltas(ddf: dd.DataFrame, config: RunConfig) -> dd.DataFrame:
 
 def build_timedelta_disqualifiers(ddf: dd.DataFrame, config: RunConfig) -> dd.DataFrame:
     """Build boolean features that depend on timedelta comparisons"""
-    delta_since_arrest = np.timedelta64(config.years_since_arrest)
-    delta_since_felony = np.timedelta64(config.years_since_felony)
-    delta_until_conviction_after_misdemeanor = np.timedelta64(config.years_until_conviction_after_misdemeanor)
-    delta_until_conviction_after_felony = np.timedelta64(config.years_until_conviction_after_felony)
-    delta_until_conviction_after_misdemeanor = np.timedelta64(config.years_until_conviction_after_misdemeanor)
-    delta_until_conviction_after_felony = np.timedelta64(config.years_until_conviction_after_felony)
+    delta_since_arrest = np.timedelta64(config.years_since_arrest, 'Y')
+    delta_since_felony = np.timedelta64(config.years_since_felony, 'Y')
+    delta_until_conviction_after_misdemeanor = np.timedelta64(config.years_until_conviction_after_misdemeanor, 'Y')
+    delta_until_conviction_after_felony = np.timedelta64(config.years_until_conviction_after_felony, 'Y')
+    delta_until_conviction_after_misdemeanor = np.timedelta64(config.years_until_conviction_after_misdemeanor, 'Y')
+    delta_until_conviction_after_felony = np.timedelta64(config.years_until_conviction_after_felony, 'Y')
 
     ddf['arrest_disqualifier'] = ddf['last_hearing_delta'] < delta_since_arrest
     ddf['felony_conviction_disqualifier'] = ddf['last_felony_conviction_delta'] < delta_since_felony

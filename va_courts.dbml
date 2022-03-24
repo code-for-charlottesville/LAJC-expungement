@@ -139,6 +139,9 @@ Table "features" {
   "has_class_1_or_2" boolean [Note: 'Person has any class 1 or 2 felony convictions on record']
   "has_class_3_or_4" boolean [Note: 'Person has any class 3 or 4 felony convictions on record']
 
+  "lifetime_disqualifier" boolean [Note: 'Person already eligible for 2 or more previous expungements on their record']
+  "sameday_disqualifier" boolean [Note: 'Charge is on the same day as another charge that is NOT automatically expungable']
+
   Note: '''
     Necessary features for the expungement eligibility
     classification of criminal records. 

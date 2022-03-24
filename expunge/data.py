@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from typing import Optional
 
 import dask.dataframe as dd
 import sqlalchemy as sa
@@ -52,8 +53,12 @@ def finish_run(
     session.commit()
 
 
-def fetch_charges(config: RunConfig, npartitions: int = None) -> dd.DataFrame:
-    query = (
+def fetch_charges(
+    config: RunConfig, 
+    npartitions: Optional[int] = None,
+    custom_query: Optional[sa.sql.Selectable] = None
+) -> dd.DataFrame:
+    query = custom_query if custom_query is not None else (
         sa.select(charges)
           .where(
               charges.c.hearing_date < config.cutoff_date
