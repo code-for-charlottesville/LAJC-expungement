@@ -75,53 +75,55 @@ S7 <- cases$disposition == "Dismissed" &
   (cases$arrests | cases$convictions)
 
 # S8: (Conviction OR deferred dismissal) of felony charges not excluded under 19.2-392.12, 
-# with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 
-# 10 years, no class 1 or 2 felony or any other felony punishable by imprisonment for life, 
+# (with no class 3 or 4 felony conviction within the past 20 years, OR no felony within the past 10 years, 
+# OR no class 1 or 2 felony or any other felony punishable by imprisonment for life)
 # and with no convictions of any other kind within 10 years from disposition date (Petition)
 S8 <- (cases$disposition == "Conviction" | cases$disposition == "Deferral Dismissal") & 
   cases$chargetype == "Felony" & 
   cases$codesection!="excluded by 19.2-392.12" & 
-  !cases$class3_4 & 
-  !cases$felony10 & 
-  !cases$class1_2 & 
+  (!cases$class3_4 | 
+  !cases$felony10 | 
+  !cases$class1_2) & 
   !cases$tenyear
 
 # S9: Conviction of misdemeanor charges not covered in 19.2-392.6 B or excluded by 19.2-392.12, 
-# with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, 
-# and no class 1 or 2 felony or any other felony punishable by imprisonment for life, 
+# (with no class 3 or 4 felony conviction within the past 20 years, OR no felony within the past 10 years, 
+# OR no class 1 or 2 felony or any other felony punishable by imprisonment for life)
 # and with no convictions of any other kind within 7 years from disposition date (Petition)
 S9 <- cases$disposition == "Conviction" & 
   cases$chargetype == "Misdemeanor" & 
   cases$codesection=="covered elsewhere" & 
-  !cases$class3_4 & 
-  !cases$felony10 & 
-  !cases$class1_2 & 
+  (!cases$class3_4 | 
+  !cases$felony10 | 
+  !cases$class1_2) & 
   !cases$sevenyear
 
 # S10: Conviction OR deferred dismissal of felony charges not excluded under 19.2-392.12, 
-# with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, 
-# no class 1 or 2 felony or any other felony punishable by imprisonment for life, 
+# (with no class 3 or 4 felony conviction within the past 20 years, OR no felony within the past 10 years, 
+# OR no class 1 or 2 felony or any other felony punishable by imprisonment for life)
 # with no convictions of any kind since the disposition date, but the disposition date is 
 # within ten years of the current date (Petition (pending))
 S10 <- (cases$disposition == "Conviction" | cases$disposition == "Deferral Dismissal") & 
   cases$chargetype == "Felony" & 
   cases$codesection!="excluded by 19.2-392.12" & 
-  !cases$class3_4 & !cases$felony10 & 
-  !cases$class1_2 & 
+  (!cases$class3_4 | 
+  !cases$felony10 | 
+  !cases$class1_2) & 
   !cases$tenyear & 
   cases$within10
 
 # S11: Conviction of misdemeanor charges not covered in 19.2-392.6 B or excluded by 19.2-392.12, 
-# with no class 3 or 4 felony conviction within the past 20 years, no felony within the past 10 years, 
-# and no class 1 or 2 felony or any other felony punishable by imprisonment for life, 
-# with no convictions of any kind since the disposition date, 
-# but the disposition date is within ten years of the current date (Petition (pending))
+# Conviction of misdemeanor charges not covered in 19.2-392.6 B or excluded by 19.2-392.12, 
+# (with no class 3 or 4 felony conviction within the past 20 years, OR no felony within the past 10 years, 
+# OR no class 1 or 2 felony or any other felony punishable by imprisonment for life), 
+# with no convictions of any kind since the disposition date, but the disposition date is within ten years of the current date, with no convictions 
+# of any kind since the disposition date, but the disposition date is within ten years of the current date (S11)
 S11 <- cases$disposition == "Conviction" & 
   cases$chargetype == "Misdemeanor" & 
   cases$codesection=="covered elsewhere" & 
-  !cases$class3_4 & 
-  !cases$felony10 & 
-  !cases$class1_2 & 
+  (!cases$class3_4 | 
+  !cases$felony10 | 
+  !cases$class1_2) & 
   !cases$sevenyear & 
   cases$within7
 

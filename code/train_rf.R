@@ -82,9 +82,9 @@ S7 <- cases$disposition == "Dismissed" &
 S8 <- (cases$disposition == "Conviction" | cases$disposition == "Deferral Dismissal") & 
   cases$chargetype == "Felony" & 
   cases$codesection!="excluded by 19.2-392.12" & 
-  !cases$class3_4 & 
-  !cases$felony10 & 
-  !cases$class1_2 & 
+  (!cases$class3_4 | 
+  !cases$felony10 | 
+  !cases$class1_2) & 
   !cases$tenyear
 
 # S9: Conviction of misdemeanor charges not covered in 19.2-392.6 B or excluded by 19.2-392.12, 
@@ -94,9 +94,9 @@ S8 <- (cases$disposition == "Conviction" | cases$disposition == "Deferral Dismis
 S9 <- cases$disposition == "Conviction" & 
   cases$chargetype == "Misdemeanor" & 
   cases$codesection=="covered elsewhere" & 
-  !cases$class3_4 & 
-  !cases$felony10 & 
-  !cases$class1_2 & 
+  (!cases$class3_4 | 
+  !cases$felony10 | 
+  !cases$class1_2) & 
   !cases$sevenyear
 
 # S10: Conviction OR deferred dismissal of felony charges not excluded under 19.2-392.12, 
